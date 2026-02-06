@@ -1,8 +1,7 @@
-// src/components/Projects.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { MdEdit, MdDelete, MdPayment, MdVisibility, MdDownload, MdCloudUpload } from 'react-icons/md';
-import { FaUsers, FaCalendarAlt, FaRupeeSign, FaMobileAlt, FaEnvelope } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { MdEdit, MdDelete, MdVisibility, MdDownload, MdCloudUpload } from 'react-icons/md';
+import { FaUsers, FaCalendarAlt, FaRupeeSign, FaMobileAlt, FaEnvelope, FaSearch, FaFilter, FaSync } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
 const Projects = () => {
@@ -10,10 +9,6 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
-  
-  // Project details modal state
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [projectDetails, setProjectDetails] = useState(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,18 +17,7 @@ const Projects = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const modalRef = useRef(null);
-
-  // Close modal when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        setShowDetailsModal(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProjects();
@@ -58,7 +42,7 @@ const Projects = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
-    
+
     setDeletingId(id);
     try {
       const res = await fetch(`http://31.97.206.144:5000/api/projects/${id}`, {
@@ -98,16 +82,8 @@ const Projects = () => {
     }
   };
 
-  // Open project details modal
-  const openProjectDetails = (project) => {
-    setProjectDetails(project);
-    setShowDetailsModal(true);
-  };
-
-  // Close details modal
-  const closeDetailsModal = () => {
-    setShowDetailsModal(false);
-    setProjectDetails(null);
+  const handleView = (id) => {
+    navigate(`/projects/${id}`);
   };
 
   // Excel Export
@@ -134,29 +110,6 @@ const Projects = () => {
     XLSX.writeFile(wb, `projects_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Get status badge color
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'completed': return 'primary';
-      case 'on hold': return 'warning';
-      case 'cancelled': return 'danger';
-      default: return 'secondary';
-    }
-  };
-
-  // Get category badge color
-  const getCategoryBadge = (category) => {
-    switch (category) {
-      case 'website': return 'info';
-      case 'mobile app': return 'success';
-      case 'digital market': return 'warning';
-      case 'software': return 'primary';
-      case 'consulting': return 'dark';
-      default: return 'secondary';
-    }
-  };
-
   // Filter projects
   const filteredProjects = projects.filter(p => {
     const matchesSearch =
@@ -173,18 +126,45 @@ const Projects = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProjects = filteredProjects.slice(startIndex, startIndex + itemsPerPage);
 
-  // Loading skeleton
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // Get status badge color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+      case 'completed': return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'on hold': return 'text-amber-600 bg-amber-50 border-amber-200';
+      case 'cancelled': return 'text-red-600 bg-red-50 border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  // Get category badge color
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'website': return 'text-teal-600 bg-teal-50 border-teal-200';
+      case 'mobile app': return 'text-green-600 bg-green-50 border-green-200';
+      case 'digital market': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'software': return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'consulting': return 'text-purple-600 bg-purple-50 border-purple-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
   if (loading) {
     return (
-      <div className="container-fluid py-4">
-        <div className="card border-0 shadow-sm">
-          <div className="card-body">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="skeleton-row mb-3">
-                <div className="skeleton-line"></div>
-              </div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading projects...</p>
         </div>
       </div>
     );
@@ -192,160 +172,153 @@ const Projects = () => {
 
   if (error) {
     return (
-      <div className="container-fluid py-4">
-        <div className="alert alert-danger d-flex align-items-center" role="alert">
-          <div>
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {error}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Projects</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={fetchProjects}
+            className="px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid py-4">
-      {/* Header Section */}
-      <div className="row align-items-center mb-4">
-        <div className="col-md-6">
-          <h2 className="fw-bold mb-2" style={{ color: '#009788' }}>
-            Project Management
-          </h2>
-          <p className="text-muted mb-0">
-            Manage all your projects in one place • {projects.length} projects total
-          </p>
-        </div>
-        <div className="col-md-6 text-md-end">
-          <div className="d-flex gap-2 justify-content-md-end">
-            <button 
-              className="btn btn-outline-success d-flex align-items-center gap-2"
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Project Management
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Manage all your projects in one place • {projects.length} projects total
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
               onClick={exportToExcel}
               disabled={projects.length === 0}
+              className="flex items-center gap-2 px-6 py-3 text-gray-700 font-medium bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <MdDownload size={18} />
-              Export Excel
+              <MdDownload className="text-lg" />
+              <span>Export Excel</span>
             </button>
-            <Link 
-              to="/add-project" 
-              className="btn text-white d-flex align-items-center gap-2 fw-semibold"
-              style={{ backgroundColor: '#009788' }}
+            <Link
+              to="/add-project"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-semibold rounded-xl hover:from-teal-700 hover:to-teal-800 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              <MdCloudUpload size={18} />
-              Add New Project
+              <MdCloudUpload className="text-lg" />
+              <span>Add New Project</span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="row mb-4">
-        <div className="col-xl-3 col-md-6 mb-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #009788' }}>
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
-                  <h6 className="card-title text-muted mb-1">Total Projects</h6>
-                  <h3 className="fw-bold mb-0" style={{ color: '#009788' }}>
-                    {projects.length}
-                  </h3>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="bg-teal bg-opacity-10 rounded-circle p-3">
-                    <FaUsers size={20} style={{ color: '#009788' }} />
-                  </div>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-teal-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm text-gray-600 font-medium mb-1">Total Projects</h3>
+              <div className="text-3xl font-bold text-gray-900">{projects.length}</div>
+            </div>
+            <div className="p-3 bg-teal-50 rounded-xl">
+              <FaUsers className="text-2xl text-teal-600" />
             </div>
           </div>
         </div>
-        
-        <div className="col-xl-3 col-md-6 mb-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #28a745' }}>
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
-                  <h6 className="card-title text-muted mb-1">Active Projects</h6>
-                  <h3 className="fw-bold mb-0 text-success">
-                    {projects.filter(p => p.status === 'active').length}
-                  </h3>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="bg-success bg-opacity-10 rounded-circle p-3">
-                    <FaCalendarAlt size={20} className="text-success" />
-                  </div>
-                </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-emerald-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm text-gray-600 font-medium mb-1">Active Projects</h3>
+              <div className="text-3xl font-bold text-emerald-600">
+                {projects.filter(p => p.status === 'active').length}
               </div>
+            </div>
+            <div className="p-3 bg-emerald-50 rounded-xl">
+              <FaCalendarAlt className="text-2xl text-emerald-500" />
             </div>
           </div>
         </div>
-        
-        <div className="col-xl-3 col-md-6 mb-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #ffc107' }}>
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
-                  <h6 className="card-title text-muted mb-1">On Hold</h6>
-                  <h3 className="fw-bold mb-0 text-warning">
-                    {projects.filter(p => p.status === 'on hold').length}
-                  </h3>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="bg-warning bg-opacity-10 rounded-circle p-3">
-                    <i className="fas fa-pause text-warning" style={{ fontSize: '20px' }}></i>
-                  </div>
-                </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-amber-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm text-gray-600 font-medium mb-1">On Hold</h3>
+              <div className="text-3xl font-bold text-amber-600">
+                {projects.filter(p => p.status === 'on hold').length}
               </div>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-xl">
+              <div className="text-2xl text-amber-500">⏸️</div>
             </div>
           </div>
         </div>
-        
-        <div className="col-xl-3 col-md-6 mb-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #17a2b8' }}>
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
-                  <h6 className="card-title text-muted mb-1">Completed</h6>
-                  <h3 className="fw-bold mb-0 text-info">
-                    {projects.filter(p => p.status === 'completed').length}
-                  </h3>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="bg-info bg-opacity-10 rounded-circle p-3">
-                    <i className="fas fa-check-circle text-info" style={{ fontSize: '20px' }}></i>
-                  </div>
-                </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm text-gray-600 font-medium mb-1">Completed</h3>
+              <div className="text-3xl font-bold text-blue-600">
+                {projects.filter(p => p.status === 'completed').length}
               </div>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-xl">
+              <div className="text-2xl text-blue-500">✓</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters Card */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body">
-          <div className="row g-3 align-items-end">
-            <div className="col-xl-4 col-md-6">
-              <label className="form-label fw-semibold">Search Projects</label>
-              <div className="input-group">
-                <span className="input-group-text bg-light border-end-0">
-                  <i className="fas fa-search text-muted"></i>
-                </span>
+      <div className="bg-white rounded-2xl shadow-lg mb-6">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <FaFilter className="text-teal-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Filters & Search</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search Projects
+              </label>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  className="form-control border-start-0"
+                  className="pl-10 pr-4 py-2.5 w-full bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="Search by project name, client, email..."
                   value={searchTerm}
-                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
             </div>
-            
-            <div className="col-xl-3 col-md-6">
-              <label className="form-label fw-semibold">Category</label>
+
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
               <select
-                className="form-select"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 value={categoryFilter}
-                onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="">All Categories</option>
                 <option value="website">Website</option>
@@ -355,13 +328,19 @@ const Projects = () => {
                 <option value="consulting">Consulting</option>
               </select>
             </div>
-            
-            <div className="col-xl-3 col-md-6">
-              <label className="form-label fw-semibold">Status</label>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
               <select
-                className="form-select"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
@@ -370,10 +349,11 @@ const Projects = () => {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            
-            <div className="col-xl-2 col-md-6">
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
               <button
-                className="btn btn-outline-secondary w-100"
+                className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                 onClick={() => {
                   setSearchTerm('');
                   setCategoryFilter('');
@@ -389,190 +369,234 @@ const Projects = () => {
       </div>
 
       {/* Projects Table */}
-      <div className="card border-0 shadow-sm">
-        <div className="card-header bg-white border-bottom-2 d-flex justify-content-between align-items-center py-3" style={{ borderColor: '#009788' }}>
-          <h5 className="mb-0 fw-bold" style={{ color: '#009788' }}>
-            Projects List
-            <span className="badge bg-teal bg-opacity-10 text-teal ms-2">
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">Projects List</h2>
+            <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium">
               {filteredProjects.length} projects
             </span>
-          </h5>
-          <div className="text-muted small">
-            Page {currentPage} of {totalPages}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 font-medium bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={fetchProjects}
+              disabled={loading}
+            >
+              <FaSync className={`${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
         </div>
-        
-        <div className="card-body p-0">
+
+        <div className="overflow-x-auto">
           {filteredProjects.length === 0 ? (
-            <div className="text-center py-5">
-              <div className="mb-3">
-                <i className="fas fa-folder-open" style={{ fontSize: '3rem', color: '#dee2e6' }}></i>
+            <div className="py-12 text-center">
+              <div className="text-gray-400">
+                <div className="text-5xl mb-4 opacity-20">📁</div>
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  No projects found
+                </h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-6">
+                  {searchTerm || categoryFilter || statusFilter
+                    ? 'Try adjusting your search or filters'
+                    : 'No projects available. Create your first project!'
+                  }
+                </p>
+                <Link
+                  to="/add-project"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-semibold rounded-xl hover:from-teal-700 hover:to-teal-800 transition-all duration-300"
+                >
+                  <MdCloudUpload className="text-lg" />
+                  Create Your First Project
+                </Link>
               </div>
-              <h5 className="text-muted">No projects found</h5>
-              <p className="text-muted mb-3">Try adjusting your search or filters</p>
-              <Link 
-                to="/add-project" 
-                className="btn text-white fw-semibold"
-                style={{ backgroundColor: '#009788' }}
-              >
-                Create Your First Project
-              </Link>
             </div>
           ) : (
             <>
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <thead>
-                    <tr style={{ backgroundColor: '#f8f9fa' }}>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">PROJECT</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">CLIENT</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">CATEGORY</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">BUDGET</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">MILESTONE</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0">STATUS</th>
-                      <th className="py-3 px-4 fw-semibold text-muted border-0 text-center">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedProjects.map((project, index) => (
-                      <tr key={project._id} className="border-bottom">
-                        <td className="py-3 px-4">
-                          <div>
-                            <div className="fw-semibold text-dark">{project.projectname}</div>
-                            <div className="small text-muted">ID: {project.projectid}</div>
-                            <div className="small text-muted">
-                              <FaCalendarAlt size={12} className="me-1" />
-                              {new Date(project.startDate).toLocaleDateString()}
-                            </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-teal-600 to-teal-700 text-white">
+                    <th className="py-4 px-6 text-left font-semibold text-sm">PROJECT</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">CLIENT</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">CATEGORY</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">BUDGET</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">MILESTONE</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">STATUS</th>
+                    <th className="py-4 px-6 text-left font-semibold text-sm">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedProjects.map((project) => (
+                    <tr key={project._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      {/* Project Info */}
+                      <td className="py-4 px-6">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-1">{project.projectname}</h3>
+                          <div className="text-sm text-gray-600 mb-2">ID: {project.projectid}</div>
+                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <FaCalendarAlt className="text-xs" />
+                            <span>{formatDate(project.startDate)}</span>
                           </div>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <div>
-                            <div className="fw-medium">{project.clientname}</div>
-                            <div className="small text-muted d-flex align-items-center gap-1">
-                              <FaMobileAlt size={12} />
-                              {project.mobilenumber}
-                            </div>
-                            <div className="small text-muted d-flex align-items-center gap-1">
-                              <FaEnvelope size={12} />
-                              {project.email}
-                            </div>
+                        </div>
+                      </td>
+
+                      {/* Client Info */}
+                      <td className="py-4 px-6">
+                        <div>
+                          <div className="font-medium text-gray-900 mb-1">{project.clientname}</div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                            <FaMobileAlt className="text-xs" />
+                            <span>{project.mobilenumber}</span>
                           </div>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <span className={`badge bg-${getCategoryBadge(project.selectcategory)} bg-opacity-10 text-${getCategoryBadge(project.selectcategory)}`}>
-                            {project.selectcategory}
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <FaEnvelope className="text-xs" />
+                            <span className="truncate max-w-[200px]">{project.email}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Category */}
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(project.selectcategory)}`}>
+                          {project.selectcategory}
+                        </span>
+                      </td>
+
+                      {/* Budget */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1 font-semibold text-gray-900">
+                          <FaRupeeSign className="text-sm" />
+                          {project.projectCost?.toLocaleString() || '0'}
+                        </div>
+                      </td>
+
+                      {/* Milestone */}
+                      <td className="py-4 px-6">
+                        <div className="text-center">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border">
+                            {project.milestone || '0'}
                           </span>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <div className="d-flex align-items-center gap-1 fw-semibold">
-                            <FaRupeeSign size={12} />
-                            {project.projectCost?.toLocaleString()}
-                          </div>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <div className="text-center">
-                            <span className="badge bg-light text-dark border">
-                              {project.milestone || '0'}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <select
-                            className={`form-select form-select-sm border-0 bg-${getStatusBadge(project.status)} bg-opacity-10 text-${getStatusBadge(project.status)} fw-semibold`}
-                            value={project.status}
-                            onChange={(e) => handleStatusChange(project._id, e.target.value)}
-                            style={{ minWidth: '120px' }}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-4 px-6">
+                        <select
+                          className={`w-full px-3 py-1.5 text-sm font-medium rounded-lg border focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${getStatusColor(project.status)}`}
+                          value={project.status}
+                          onChange={(e) => handleStatusChange(project._id, e.target.value)}
+                        >
+                          <option value="active" className="text-emerald-600">Active</option>
+                          <option value="on hold" className="text-amber-600">On Hold</option>
+                          <option value="completed" className="text-blue-600">Completed</option>
+                          <option value="cancelled" className="text-red-600">Cancelled</option>
+                        </select>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleView(project._id)}
+                            className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                            title="View Details"
                           >
-                            <option value="active" className="text-success">Active</option>
-                            <option value="on hold" className="text-warning">On Hold</option>
-                            <option value="completed" className="text-primary">Completed</option>
-                            <option value="cancelled" className="text-danger">Cancelled</option>
-                          </select>
-                        </td>
-                        
-                        <td className="py-3 px-4">
-                          <div className="d-flex justify-content-center gap-2">
-                            <button
-                              onClick={() => openProjectDetails(project)}
-                              className="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
-                              title="View Details"
-                            >
-                              <MdVisibility size={16} />
-                            </button>
-                            
-                            <Link
-                              to={`/edit-project/${project._id}`}
-                              className="btn btn-sm btn-outline-teal d-flex align-items-center gap-1"
-                              title="Edit Project"
-                            >
-                              <MdEdit size={16} />
-                            </Link>
-                            
-                            <button
-                              onClick={() => handleDelete(project._id)}
-                              className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
-                              title="Delete Project"
-                              disabled={deletingId === project._id}
-                            >
-                              {deletingId === project._id ? (
-                                <div className="spinner-border spinner-border-sm" role="status">
-                                  <span className="visually-hidden">Deleting...</span>
-                                </div>
-                              ) : (
-                                <MdDelete size={16} />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            <MdVisibility className="text-lg" />
+                          </button>
+                          
+                          <Link
+                            to={`/edit-project/${project._id}`}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Project"
+                          >
+                            <MdEdit className="text-lg" />
+                          </Link>
+                          
+                          <button
+                            onClick={() => handleDelete(project._id)}
+                            disabled={deletingId === project._id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete Project"
+                          >
+                            {deletingId === project._id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600"></div>
+                            ) : (
+                              <MdDelete className="text-lg" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="card-footer bg-white border-top-0">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="text-muted small">
+                <div className="px-6 py-4 border-t border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="text-sm text-gray-600">
                       Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProjects.length)} of {filteredProjects.length} entries
                     </div>
-                    <nav>
-                      <ul className="pagination pagination-sm mb-0">
-                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                          <button 
-                            className="page-link" 
-                            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                          >
-                            Previous
-                          </button>
-                        </li>
-                        {[...Array(totalPages)].map((_, i) => (
-                          <li key={i} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
-                            <button 
-                              className="page-link" 
-                              onClick={() => setCurrentPage(i + 1)}
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
+                          currentPage === 1
+                            ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        Previous
+                      </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                                currentPage === pageNum
+                                  ? 'bg-teal-600 text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
                             >
-                              {i + 1}
+                              {pageNum}
                             </button>
-                          </li>
-                        ))}
-                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                          <button 
-                            className="page-link" 
-                            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
-                          >
-                            Next
-                          </button>
-                        </li>
-                      </ul>
-                    </nav>
+                          );
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
+                          currentPage === totalPages
+                            ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -580,306 +604,6 @@ const Projects = () => {
           )}
         </div>
       </div>
-
-      {/* Project Details Modal */}
-  {/* Project Details Modal */}
-{showDetailsModal && projectDetails && (
-  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-    <div className="modal-dialog modal-lg modal-dialog-centered" ref={modalRef}>
-      <div className="modal-content border-0 shadow">
-        <div className="modal-header text-white border-0" style={{ backgroundColor: '#009788' }}>
-          <h5 className="modal-title fw-bold">Project Details</h5>
-          <button 
-            type="button" 
-            className="btn-close btn-close-white" 
-            onClick={closeDetailsModal}
-          ></button>
-        </div>
-        <div className="modal-body">
-          <div className="row">
-            {/* Basic Information */}
-            <div className="col-md-6">
-              <h6 className="fw-bold text-teal mb-3">Basic Information</h6>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Project ID</label>
-                <p className="mb-0 fw-medium">{projectDetails.projectid}</p>
-              </div>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Project Name</label>
-                <p className="mb-0 fw-medium">{projectDetails.projectname}</p>
-              </div>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Category</label>
-                <p className="mb-0">
-                  <span className={`badge bg-${getCategoryBadge(projectDetails.selectcategory)} bg-opacity-10 text-${getCategoryBadge(projectDetails.selectcategory)}`}>
-                    {projectDetails.selectcategory}
-                  </span>
-                </p>
-              </div>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Status</label>
-                <p className="mb-0">
-                  <span className={`badge bg-${getStatusBadge(projectDetails.status)}`}>
-                    {projectDetails.status}
-                  </span>
-                </p>
-              </div>
-            </div>
-            
-            {/* Client Information */}
-            <div className="col-md-6">
-              <h6 className="fw-bold text-teal mb-3">Client Information</h6>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Client Name</label>
-                <p className="mb-0 fw-medium">{projectDetails.clientname}</p>
-              </div>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Mobile</label>
-                <p className="mb-0">{projectDetails.mobilenumber}</p>
-              </div>
-              <div className="mb-3">
-                <label className="fw-semibold text-muted small">Email</label>
-                <p className="mb-0">{projectDetails.email}</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Timeline */}
-          <hr />
-          <h6 className="fw-bold text-teal mb-3">Project Timeline</h6>
-          <div className="row">
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Start Date</label>
-              <p className="mb-0">
-                {new Date(projectDetails.startDate).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric'
-                })}
-              </p>
-            </div>
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Handover Date</label>
-              <p className="mb-0">
-                {new Date(projectDetails.projectHandoverDate).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric'
-                })}
-              </p>
-            </div>
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Deadline</label>
-              <p className="mb-0">
-                {new Date(projectDetails.deadlineDate).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric'
-                })}
-              </p>
-            </div>
-          </div>
-          
-          {/* Financial Information */}
-          <hr />
-          <h6 className="fw-bold text-teal mb-3">Financial Information</h6>
-          <div className="row">
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Project Cost</label>
-              <p className="mb-0 fw-semibold text-teal">
-                ₹{projectDetails.projectCost?.toLocaleString()}
-              </p>
-            </div>
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Total Milestones</label>
-              <p className="mb-0 fw-semibold">{projectDetails.milestone || '0'}</p>
-            </div>
-            <div className="col-md-4 mb-3">
-              <label className="fw-semibold text-muted small">Created On</label>
-              <p className="mb-0">
-                {new Date(projectDetails.createdAt).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric'
-                })}
-              </p>
-            </div>
-          </div>
-
-          {/* Milestone Payments Section */}
-          {projectDetails.milestonePayments && projectDetails.milestonePayments.length > 0 && (
-            <>
-              <hr />
-              <h6 className="fw-bold text-teal mb-3">
-                Milestone Payments 
-                <span className="badge bg-teal ms-2">{projectDetails.milestonePayments.length}</span>
-              </h6>
-              <div className="table-responsive">
-                <table className="table table-sm table-bordered">
-                  <thead style={{ backgroundColor: '#f8f9fa' }}>
-                    <tr>
-                      <th className="py-2 px-3 fw-semibold small">#</th>
-                      <th className="py-2 px-3 fw-semibold small">Amount</th>
-                      <th className="py-2 px-3 fw-semibold small">Description</th>
-                      <th className="py-2 px-3 fw-semibold small">Payment Mode</th>
-                      <th className="py-2 px-3 fw-semibold small">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projectDetails.milestonePayments.map((payment, index) => (
-                      <tr key={payment._id || index}>
-                        <td className="py-2 px-3 text-center fw-medium">
-                          {index + 1}
-                        </td>
-                        <td className="py-2 px-3">
-                          <span className="fw-semibold text-success">
-                            ₹{payment.amount?.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3">
-                          {payment.description || 'No description'}
-                        </td>
-                        <td className="py-2 px-3">
-                          <span className={`badge ${
-                            payment.paymentMode === 'Cash' ? 'bg-success' :
-                            payment.paymentMode === 'Bank Transfer' ? 'bg-primary' :
-                            payment.paymentMode === 'UPI' ? 'bg-info' :
-                            payment.paymentMode === 'Cheque' ? 'bg-warning text-dark' :
-                            'bg-secondary'
-                          }`}>
-                            {payment.paymentMode}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3">
-                          <span className={`badge ${
-                            payment.paid ? 'bg-success' : 'bg-warning text-dark'
-                          }`}>
-                            {payment.paid ? 'Paid' : 'Pending'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {projectDetails.milestonePayments.length > 0 && (
-                    <tfoot style={{ backgroundColor: '#f8f9fa' }}>
-                      <tr>
-                        <td colSpan="1" className="py-2 px-3 fw-semibold text-end">
-                          Total Paid:
-                        </td>
-                        <td className="py-2 px-3 fw-bold text-success">
-                          ₹{projectDetails.milestonePayments
-                            .reduce((total, payment) => total + (payment.amount || 0), 0)
-                            .toLocaleString()}
-                        </td>
-                        <td colSpan="3" className="py-2 px-3 text-muted small">
-                          {projectDetails.milestonePayments.filter(p => p.paid).length} of {projectDetails.milestonePayments.length} milestones paid
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
-              
-              {/* Payment Progress Bar */}
-              <div className="mt-3">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span className="small text-muted">Payment Progress</span>
-                  <span className="small fw-semibold">
-                    {Math.round(
-                      (projectDetails.milestonePayments.filter(p => p.paid).length / 
-                       projectDetails.milestonePayments.length) * 100
-                    )}%
-                  </span>
-                </div>
-                <div className="progress" style={{ height: '8px' }}>
-                  <div 
-                    className="progress-bar bg-success" 
-                    style={{ 
-                      width: `${(projectDetails.milestonePayments.filter(p => p.paid).length / projectDetails.milestonePayments.length) * 100}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </>
-          )}
-          
-          {/* Team Members */}
-          {projectDetails.teamMembers && Object.keys(projectDetails.teamMembers).length > 0 && (
-            <>
-              <hr />
-              <h6 className="fw-bold text-teal mb-3">Team Members</h6>
-              <div className="row">
-                {Object.entries(projectDetails.teamMembers).map(([role, members]) => (
-                  members.length > 0 && (
-                    <div key={role} className="col-md-6 mb-2">
-                      <label className="fw-semibold text-muted small text-capitalize">
-                        {role} ({members.length})
-                      </label>
-                      <div className="d-flex flex-wrap gap-1">
-                        {members.map((member, idx) => (
-                          <span key={idx} className="badge bg-light text-dark border small">
-                            {member}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                ))}
-              </div>
-            </>
-          )}
-          
-          {/* Files */}
-          {(projectDetails.uploadfile || projectDetails.quotationfile) && (
-            <>
-              <hr />
-              <h6 className="fw-bold text-teal mb-3">Attached Files</h6>
-              <div className="row">
-                {projectDetails.uploadfile && (
-                  <div className="col-md-6 mb-2">
-                    <a 
-                      href={projectDetails.uploadfile} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 w-100"
-                    >
-                      <i className="fas fa-file-image"></i>
-                      Project File
-                      <i className="fas fa-external-link-alt ms-auto small"></i>
-                    </a>
-                  </div>
-                )}
-                {projectDetails.quotationfile && (
-                  <div className="col-md-6 mb-2">
-                    <a 
-                      href={projectDetails.quotationfile} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline-success d-flex align-items-center gap-2 w-100"
-                    >
-                      <i className="fas fa-file-pdf"></i>
-                      Quotation File
-                      <i className="fas fa-external-link-alt ms-auto small"></i>
-                    </a>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-        <div className="modal-footer border-0">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
-            onClick={closeDetailsModal}
-          >
-            Close
-          </button>
-          <Link 
-            to={`/edit-project/${projectDetails._id}`}
-            className="btn text-white"
-            style={{ backgroundColor: '#009788' }}
-            onClick={closeDetailsModal}
-          >
-            Edit Project
-          </Link>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
     </div>
   );
 };

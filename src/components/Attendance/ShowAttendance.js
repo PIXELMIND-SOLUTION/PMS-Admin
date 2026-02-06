@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { Bar, Pie } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,14 +10,23 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-// Set default month to current month
+/* ================= DEFAULT MONTH ================= */
+
 const getCurrentMonth = () => {
   const now = new Date();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 01-12
+  const month = (now.getMonth() + 1).toString().padStart(2, "0");
   return `${now.getFullYear()}-${month}`;
 };
 
@@ -27,26 +36,31 @@ const ShowAttendance = () => {
   const [filterMonth, setFilterMonth] = useState(getCurrentMonth());
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-  // Fetch all attendance on mount
+  /* ================= FETCH ================= */
+
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const res = await axios.get('http://31.97.206.144:5000/api/getall-attendance');
+        const res = await axios.get(
+          "http://31.97.206.144:5000/api/getall-attendance"
+        );
+
         if (res.data.success) {
-          // Map API data to consistent format
-          const mappedData = res.data.data.map((a) => ({
+          const mapped = res.data.data.map((a) => ({
             id: a._id,
             name: a.name,
-            date: a.date.slice(0, 10), // YYYY-MM-DD
-            status: a.status.charAt(0).toUpperCase() + a.status.slice(1), // Capitalize
-            dayType: a.dayType || '',
-            hours: a.hoursWorked || '',
+            date: a.date.slice(0, 10),
+            status:
+              a.status.charAt(0).toUpperCase() + a.status.slice(1),
+            dayType: a.dayType || "",
+            hours: a.hoursWorked || "",
             staffId: a.staffId,
           }));
-          setAttendanceData(mappedData);
+
+          setAttendanceData(mapped);
         }
-      } catch (error) {
-        console.error('Error fetching attendance:', error);
+      } catch (err) {
+        console.error("Attendance fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -55,237 +69,321 @@ const ShowAttendance = () => {
     fetchAttendance();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Present': return 'green';
-      case 'Absent': return 'red';
-      case 'Leave': return 'orange';
-      default: return 'gray';
-    }
-  };
+  /* ================= FILTER ================= */
 
-  // Filter data by month
   const filteredData = useMemo(() => {
     return filterMonth
-      ? attendanceData.filter((a) => a.date.startsWith(filterMonth))
+      ? attendanceData.filter((a) =>
+          a.date.startsWith(filterMonth)
+        )
       : attendanceData;
   }, [filterMonth, attendanceData]);
 
-  // Unique employees from filtered data
   const employees = useMemo(() => {
     return [...new Set(filteredData.map((a) => a.name))];
   }, [filteredData]);
 
-  // Handle employee click: fetch individual attendance (optional)
+  /* ================= EMPLOYEE CLICK ================= */
+
   const handleEmployeeClick = async (name) => {
     try {
       const emp = filteredData.find((a) => a.name === name);
       if (!emp) return;
 
-      const res = await axios.get(`http://31.97.206.144:5000/api/attendance/staff/${emp.staffId}`);
+      const res = await axios.get(
+        `http://31.97.206.144:5000/api/attendance/staff/${emp.staffId}`
+      );
+
       if (res.data.success) {
         const empData = res.data.data.map((a) => ({
           id: a._id,
           name: a.name,
           date: a.date.slice(0, 10),
-          status: a.status.charAt(0).toUpperCase() + a.status.slice(1),
-          dayType: a.dayType || '',
-          hours: a.hoursWorked || '',
+          status:
+            a.status.charAt(0).toUpperCase() +
+            a.status.slice(1),
+          dayType: a.dayType || "",
+          hours: a.hoursWorked || "",
           staffId: a.staffId,
         }));
+
         setAttendanceData((prev) => {
-          // Update filteredData for selected employee only
-          const otherData = prev.filter((d) => d.name !== name);
-          return [...otherData, ...empData];
+          const others = prev.filter((d) => d.name !== name);
+          return [...others, ...empData];
         });
+
         setSelectedEmployee(name);
       }
-    } catch (error) {
-      console.error('Error fetching employee attendance:', error);
+    } catch (err) {
+      console.error("Employee fetch error:", err);
     }
   };
 
-  // Go back to main view
   const goBack = () => setSelectedEmployee(null);
 
-  if (loading) return <p className="text-center mt-5">Loading attendance data...</p>;
+  /* ================= LOADING ================= */
 
-  // --- Employee Detailed View ---
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-500 text-lg">
+        Loading attendance...
+      </div>
+    );
+  }
+
+  /* ======================================================
+        EMPLOYEE DETAIL VIEW
+  ====================================================== */
+
   if (selectedEmployee) {
-    const empData = filteredData.filter((a) => a.name === selectedEmployee);
+    const empData = filteredData.filter(
+      (a) => a.name === selectedEmployee
+    );
 
-    const present = empData.filter((d) => d.status === 'Present').length;
-    const absent = empData.filter((d) => d.status === 'Absent').length;
-    const leave = empData.filter((d) => d.status === 'Leave').length;
+    const present = empData.filter(
+      (d) => d.status === "Present"
+    ).length;
+
+    const absent = empData.filter(
+      (d) => d.status === "Absent"
+    ).length;
+
+    const leave = empData.filter(
+      (d) => d.status === "Leave"
+    ).length;
 
     const barData = {
-      labels: ['Attendance Summary'],
+      labels: ["Attendance"],
       datasets: [
-        { label: 'Present', data: [present], backgroundColor: 'green' },
-        { label: 'Absent', data: [absent], backgroundColor: 'red' },
-        { label: 'Leave', data: [leave], backgroundColor: 'orange' },
+        {
+          label: "Present",
+          data: [present],
+        },
+        {
+          label: "Absent",
+          data: [absent],
+        },
+        {
+          label: "Leave",
+          data: [leave],
+        },
       ],
     };
 
     const pieData = {
-      labels: ['Present', 'Absent', 'Leave'],
-      datasets: [{ data: [present, absent, leave], backgroundColor: ['green', 'red', 'orange'] }],
+      labels: ["Present", "Absent", "Leave"],
+      datasets: [
+        {
+          data: [present, absent, leave],
+        },
+      ],
     };
 
     return (
-      <div className="container mt-4">
-        <div className="d-flex align-items-center mb-4">
-          <button className="btn btn-sm btn-outline-secondary me-3" onClick={goBack}>
-            ← Back
-          </button>
-          <h4>Attendance: {selectedEmployee}</h4>
-        </div>
+      <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+        <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Filter */}
-        <div className="mb-3 w-25">
-          <label className="form-label">Filter by Month</label>
-          <input
-            type="month"
-            className="form-control"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-          />
-        </div>
+          {/* HEADER */}
 
-        {/* Attendance Table */}
-        <table className="table table-bordered mb-5">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Day Type</th>
-              <th>Hours</th>
-            </tr>
-          </thead>
-          <tbody>
-            {empData.length > 0 ? (
-              empData.map((record, idx) => (
-                <tr key={record.id}>
-                  <td>{idx + 1}</td>
-                  <td>{record.date}</td>
-                  <td>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: getStatusColor(record.status),
-                        marginRight: '8px',
-                      }}
-                    ></span>
-                    {record.status}
-                  </td>
-                  <td>{record.dayType || '-'}</td>
-                  <td>{record.hours || '-'}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="text-center text-muted">
-                  No records found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-white border rounded-xl shadow-sm hover:bg-slate-100 transition"
+            >
+              ← Back
+            </button>
 
-        {/* Charts */}
-        <div className="row">
-          <div className="col-md-6">
-            <h5>Attendance Summary (Bar)</h5>
-            <Bar
-              data={barData}
-              options={{
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-              }}
+            <h1 className="text-3xl font-bold text-slate-800">
+              {selectedEmployee}
+            </h1>
+          </div>
+
+          {/* FILTER */}
+
+          <div className="bg-white p-5 rounded-2xl shadow-sm border w-fit">
+            <label className="text-sm font-semibold text-slate-600">
+              Filter by Month
+            </label>
+
+            <input
+              type="month"
+              value={filterMonth}
+              onChange={(e) =>
+                setFilterMonth(e.target.value)
+              }
+              className="mt-2 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none"
             />
           </div>
-          <div className="col-md-6">
-            <h5>Attendance Distribution (Pie)</h5>
-            <Pie
-              data={pieData}
-              options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }}
-            />
+
+          {/* TABLE */}
+
+          <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-100 text-slate-700">
+                <tr>
+                  <th className="p-4 text-left">#</th>
+                  <th className="p-4 text-left">Date</th>
+                  <th className="p-4 text-left">Status</th>
+                  <th className="p-4 text-left">Day Type</th>
+                  <th className="p-4 text-left">Hours</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {empData.map((rec, i) => (
+                  <tr
+                    key={rec.id}
+                    className="border-t hover:bg-slate-50 transition"
+                  >
+                    <td className="p-4">{i + 1}</td>
+                    <td className="p-4">{rec.date}</td>
+                    <td className="p-4 font-medium">
+                      {rec.status}
+                    </td>
+                    <td className="p-4">
+                      {rec.dayType || "-"}
+                    </td>
+                    <td className="p-4">
+                      {rec.hours || "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* CHARTS */}
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border">
+              <h3 className="font-semibold mb-4">
+                Attendance Summary
+              </h3>
+              <Bar data={barData} />
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl shadow-sm border">
+              <h3 className="font-semibold mb-4">
+                Distribution
+              </h3>
+              <Pie data={pieData} />
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // --- Main View: All Employees ---
+  /* ======================================================
+        MAIN VIEW
+  ====================================================== */
+
   const employeeStats = employees.map((emp) => {
-    const empData = filteredData.filter((a) => a.name === emp);
+    const data = filteredData.filter((a) => a.name === emp);
+
     return {
       name: emp,
-      present: empData.filter((d) => d.status === 'Present').length,
-      absent: empData.filter((d) => d.status === 'Absent').length,
-      leave: empData.filter((d) => d.status === 'Leave').length,
-      total: empData.length,
+      present: data.filter((d) => d.status === "Present")
+        .length,
+      absent: data.filter((d) => d.status === "Absent")
+        .length,
+      leave: data.filter((d) => d.status === "Leave")
+        .length,
+      total: data.length,
     };
   });
 
   return (
-    <div className="container mt-4">
-      <h3 className="mb-4">Attendance Records</h3>
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      {/* Month Filter */}
-      <div className="mb-3 w-25">
-        <label className="form-label">Filter by Month</label>
-        <input
-          type="month"
-          className="form-control"
-          value={filterMonth}
-          onChange={(e) => setFilterMonth(e.target.value)}
-        />
-      </div>
+        {/* HEADER */}
 
-      {/* Employee Summary Table */}
-      <table className="table table-bordered">
-        <thead className="table-light">
-          <tr>
-            <th>#</th>
-            <th>Employee Name</th>
-            <th>Total Days</th>
-            <th>Present</th>
-            <th>Absent</th>
-            <th>Leave</th>
-          </tr>
-        </thead>
-        <tbody>
-          {employeeStats.length > 0 ? (
-            employeeStats.map((emp, idx) => (
-              <tr
-                key={emp.name}
-                onClick={() => handleEmployeeClick(emp.name)}
-                style={{ cursor: 'pointer' }}
-                className="table-row-hover"
-              >
-                <td>{idx + 1}</td>
-                <td className="text-primary fw-medium">{emp.name}</td>
-                <td>{emp.total}</td>
-                <td className="text-success">{emp.present}</td>
-                <td className="text-danger">{emp.absent}</td>
-                <td className="text-warning">{emp.leave}</td>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">
+            Attendance Dashboard
+          </h1>
+          <p className="text-slate-500">
+            Monitor employee attendance effortlessly.
+          </p>
+        </div>
+
+        {/* FILTER */}
+
+        <div className="bg-white p-5 rounded-2xl shadow-sm border w-fit">
+          <label className="text-sm font-semibold text-slate-600">
+            Filter by Month
+          </label>
+
+          <input
+            type="month"
+            value={filterMonth}
+            onChange={(e) =>
+              setFilterMonth(e.target.value)
+            }
+            className="mt-2 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none"
+          />
+        </div>
+
+        {/* TABLE */}
+
+        <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="p-4 text-left">#</th>
+                <th className="p-4 text-left">
+                  Employee
+                </th>
+                <th className="p-4 text-left">
+                  Total
+                </th>
+                <th className="p-4 text-left">
+                  Present
+                </th>
+                <th className="p-4 text-left">
+                  Absent
+                </th>
+                <th className="p-4 text-left">
+                  Leave
+                </th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" className="text-center text-muted">
-                No attendance data available
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            </thead>
+
+            <tbody>
+              {employeeStats.map((emp, i) => (
+                <tr
+                  key={emp.name}
+                  onClick={() =>
+                    handleEmployeeClick(emp.name)
+                  }
+                  className="border-t hover:bg-slate-50 cursor-pointer transition"
+                >
+                  <td className="p-4">{i + 1}</td>
+
+                  <td className="p-4 font-semibold text-teal-600">
+                    {emp.name}
+                  </td>
+
+                  <td className="p-4">{emp.total}</td>
+
+                  <td className="p-4 text-green-600 font-medium">
+                    {emp.present}
+                  </td>
+
+                  <td className="p-4 text-red-600 font-medium">
+                    {emp.absent}
+                  </td>
+
+                  <td className="p-4 text-yellow-600 font-medium">
+                    {emp.leave}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

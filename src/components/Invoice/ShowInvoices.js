@@ -1,63 +1,100 @@
-import React from 'react';
+import React from "react";
+
+const invoices = [
+  {
+    id: 1,
+    invoiceId: "INV001",
+    clientName: "Acme Corp",
+    clientMobile: "9876543210",
+    date: "2025-10-14",
+    totalAmount: 5000,
+    status: "Paid",
+  },
+  {
+    id: 2,
+    invoiceId: "INV002",
+    clientName: "Globex",
+    clientMobile: "9123456780",
+    date: "2025-10-15",
+    totalAmount: 3500,
+    status: "Unpaid",
+  },
+];
 
 const ShowInvoices = () => {
-  const invoices = [
-    { id: 1, invoiceNo: 'INV001', clientName: 'Acme Corp', date: '2025-10-14', amount: 5000, status: 'Paid', file: '/files/invoice1.pdf' },
-    { id: 2, invoiceNo: 'INV002', clientName: 'Globex', date: '2025-10-14', amount: 3500, status: 'Unpaid', file: '/files/invoice2.pdf' },
-    { id: 3, invoiceNo: 'INV003', clientName: 'Initech', date: '2025-10-14', amount: 7200, status: 'Paid', file: '/files/invoice3.pdf' },
-  ];
-
-  const getStatusColor = (status) => {
-    return status === 'Paid' ? 'green' : 'red';
-  };
-
   return (
-    <div className="container mt-4">
-      <h3 className="mb-4">Invoices</h3>
-      <table className="table table-bordered align-middle">
-        <thead className="table-light">
-          <tr>
-            <th>#</th>
-            <th>Invoice No</th>
-            <th>Client</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Download</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.map((inv) => (
-            <tr key={inv.id}>
-              <td>{inv.id}</td>
-              <td>{inv.invoiceNo}</td>
-              <td>{inv.clientName}</td>
-              <td>{inv.date}</td>
-              <td>${inv.amount}</td>
-              <td style={{ color: getStatusColor(inv.status), fontWeight: 'bold' }}>
-                {inv.status}
-              </td>
-              <td>
-                <a
-                  href={inv.file}
-                  download
-                  className="btn btn-sm btn-outline-primary"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 8px',
-                    fontSize: '0.9rem',
-                  }}
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+        
+        <h2 className="text-2xl font-bold mb-6">
+          Invoices
+        </h2>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            
+            <thead>
+              <tr className="bg-slate-100 text-slate-700">
+                <th className="p-3 text-left">Invoice</th>
+                <th className="p-3 text-left">Client</th>
+                <th className="p-3">Mobile</th>
+                <th className="p-3">Date</th>
+                <th className="p-3">Amount</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Download</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {invoices.map((inv) => (
+                <tr
+                  key={inv.id}
+                  className="border-b hover:bg-slate-50 transition"
                 >
-                  {/* Simple download icon using unicode */}
-                  &#128190; Download
-                </a>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <td className="p-3 font-semibold">
+                    {inv.invoiceId}
+                  </td>
+
+                  <td className="p-3">
+                    {inv.clientName}
+                  </td>
+
+                  <td className="p-3 text-center">
+                    {inv.clientMobile}
+                  </td>
+
+                  <td className="p-3 text-center">
+                    {inv.date}
+                  </td>
+
+                  <td className="p-3 text-center font-semibold">
+                    ₹{inv.totalAmount}
+                  </td>
+
+                  <td className="p-3 text-center">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        inv.status === "Paid"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {inv.status}
+                    </span>
+                  </td>
+
+                  <td className="p-3 text-center">
+                    <button className="px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition text-xs">
+                      Download
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

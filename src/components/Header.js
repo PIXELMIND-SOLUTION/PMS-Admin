@@ -25,7 +25,7 @@ const Header = ({ onToggleSidebar, onLogout, isMobile }) => {
           <MdMenu size={20} />
         </button>
         <h2 className="mb-0 fw-bold fs-5 fs-md-4" style={{ color: '#009788' }}>
-          {isMobile ? 'Dashboard' : 'Webcode Back!'}
+          {isMobile ? 'Dashboard' : 'PixelmindSolutions'}
         </h2>
       </div>
       

@@ -21,6 +21,9 @@ import CreateInvoice from './components/Invoice/CreateInvoice';
 import ShowInvoices from './components/Invoice/ShowInvoices';
 import CreatePayslip from './components/Payslips/CreatePayslip';
 import ShowPayslips from './components/Payslips/ShowPayslips';
+import StaffDetails from './components/SingleStaff';
+import ProjectDetails from './components/SingleProject';
+import AdvancedInvoice from './components/Invoice/AdvaceInvoiceGenerator';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -55,9 +58,11 @@ function App() {
       >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="staff" element={<Staff />} />
-        <Route path="staff/:id" element={<EditStaff />} />
+        <Route path="staff/:id" element={<StaffDetails />} />
+        <Route path="staff/edit/:id" element={<EditStaff />} />
         <Route path="add-staff" element={<AddStaff />} />
         <Route path="add-project" element={<AddProject />} />
+        <Route path="projects/:id" element={<ProjectDetails />} />
         <Route path="edit-project/:id" element={<EditProject />} />
         <Route path="projects" element={<Projects />} />
         <Route path="assigned-works" element={<AssignedWorks />} />
@@ -67,6 +72,7 @@ function App() {
         <Route path="attendance" element={<ShowAttendance />} />
         <Route path="create-invoice" element={<CreateInvoice />} />
         <Route path="invoices" element={<ShowInvoices />} />
+        <Route path="invoices1" element={<AdvancedInvoice />} />
         <Route path="create-payslip" element={<CreatePayslip />} />
         <Route path="payslips" element={<ShowPayslips />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

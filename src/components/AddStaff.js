@@ -1,499 +1,384 @@
 // src/components/AddStaff.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  Phone,
+  Mail,
+  Briefcase,
+  Calendar,
+  Droplet,
+  Lock,
+  File,
+  X,
+  ArrowLeft,
+} from "lucide-react";
 
 const AddStaff = () => {
-  const [formData, setFormData] = useState({
-    staffId: '',
-    staffName: '',
-    mobileNumber: '',
-    email: '',
-    role: '',
-    joiningDate: '',
-    experience: '',
-    bloodGroup: '',
-    password: ''
-  });
-  const [profileImage, setProfileImage] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [profilePreview, setProfilePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
   const navigate = useNavigate();
 
-  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const [formData, setFormData] = useState({
+    staffId: "",
+    staffName: "",
+    mobileNumber: "",
+    email: "",
+    role: "",
+    joiningDate: "",
+    experience: "",
+    bloodGroup: "",
+    password: "",
+  });
+
+  const [profilePreview, setProfilePreview] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
   const roles = [
-    'CEO', 'HR', 'Backend Developer', 'Frontend Developer', 
-    'Full Stack Developer', 'Project Manager', 'Designer', 
-    'QA Engineer', 'DevOps Engineer', 'Team Lead'
+    "CEO",
+    "HR",
+    "Backend Developer",
+    "Frontend Developer",
+    "Full Stack Developer",
+    "Project Manager",
+    "Designer",
+    "QA Engineer",
+    "DevOps Engineer",
+    "Team Lead",
   ];
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  /* ---------- Profile Upload ---------- */
 
   const handleProfileImageChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) {
-      setProfileImage(null);
-      setProfilePreview(null);
-      return;
-    }
+    const file = e.target.files[0];
+    if (!file) return;
 
-    // Validate image type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      setError('Please upload a valid image (JPG/PNG)');
-      return;
-    }
+    setProfileImage(file);
 
-    if (selectedFile.size > 2 * 1024 * 1024) { // 2MB limit for profile
-      setError('Profile image size must be less than 2MB');
-      return;
-    }
-
-    setError('');
-    setProfileImage(selectedFile);
-
-    // Generate preview
     const reader = new FileReader();
-    reader.onload = () => {
-      setProfilePreview(reader.result);
-    };
-    reader.readAsDataURL(selectedFile);
+    reader.onload = () => setProfilePreview(reader.result);
+    reader.readAsDataURL(file);
   };
+
+  /* ---------- Documents ---------- */
 
   const handleDocumentsChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    
-    // Validate files
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/jpg',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-
-    const validFiles = selectedFiles.filter(file => {
-      if (!allowedTypes.includes(file.type)) {
-        setError(`File ${file.name} is not a valid type. Please upload images, PDF, or DOC files.`);
-        return false;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setError(`File ${file.name} exceeds 5MB size limit`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length > 0) {
-      setError('');
-      setDocuments(prev => [...prev, ...validFiles]);
-    }
+    const files = Array.from(e.target.files);
+    setDocuments((prev) => [...prev, ...files]);
   };
 
-  const removeDocument = (index) => {
-    setDocuments(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeDocument = (index) =>
+    setDocuments((prev) => prev.filter((_, i) => i !== index));
+
+  /* ---------- Submit ---------- */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!profileImage) {
-      setError('Please upload a profile image');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setSuccess('');
 
     const formDataToSend = new FormData();
-    
-    // Append form data
-    Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value);
-    });
-    
-    // Append profile image
-    formDataToSend.append('profileImage', profileImage);
-    
-    // Append documents
-    documents.forEach(file => {
-      formDataToSend.append('documents', file);
-    });
+
+    Object.entries(formData).forEach(([key, val]) =>
+      formDataToSend.append(key, val)
+    );
+
+    if (profileImage)
+      formDataToSend.append("profileImage", profileImage);
+
+    documents.forEach((doc) =>
+      formDataToSend.append("documents", doc)
+    );
 
     try {
-      const response = await fetch('http://31.97.206.144:5000/api/create_staff', {
-        method: 'POST',
-        body: formDataToSend
-      });
+      setLoading(true);
 
-      const data = await response.json();
+      const res = await fetch(
+        "http://31.97.206.144:5000/api/create_staff",
+        {
+          method: "POST",
+          body: formDataToSend,
+        }
+      );
+
+      const data = await res.json();
 
       if (data.success) {
-        setSuccess('Staff added successfully!');
-        setTimeout(() => navigate('/staff'), 2000);
+        setSuccess("Staff added successfully!");
+        setTimeout(() => navigate("/staff"), 1400);
       } else {
-        setError(data.message || 'Failed to add staff');
+        setError(data.message);
       }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error(err);
+    } catch {
+      setError("Network error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container-fluid py-4">
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold mb-1" style={{ color: '#009788' }}>Add New Staff</h2>
-          <p className="text-muted mb-0">Create a new staff member profile</p>
-        </div>
-        <button 
-          className="btn btn-outline-secondary"
-          onClick={() => navigate('/staff')}
-        >
-          ← Back to Staff
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#f5f7fb] p-8">
+      <div className="max-w-6xl mx-auto">
 
-      <div className="row">
-        <div className="col-12">
-          <div className="card border-0 shadow-lg">
-            <div className="card-header bg-white py-3 border-bottom">
-              <h4 className="mb-0 fw-bold" style={{ color: '#009788' }}>
-                <i className="fas fa-user-plus me-2"></i>
-                Staff Information
-              </h4>
-            </div>
-            
-            <div className="card-body p-4">
-              {error && (
-                <div className="alert alert-danger d-flex align-items-center" role="alert">
-                  <i className="fas fa-exclamation-triangle me-2"></i>
-                  {error}
-                </div>
-              )}
-              
-              {success && (
-                <div className="alert alert-success d-flex align-items-center" role="alert">
-                  <i className="fas fa-check-circle me-2"></i>
-                  {success}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                {/* Profile Image Upload */}
-                <div className="row mb-4">
-                  <div className="col-12">
-                    <div className="d-flex align-items-center mb-3">
-                      <div className="me-4">
-                        <div 
-                          className="rounded-circle border d-flex align-items-center justify-content-center"
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            backgroundColor: '#f8f9fa',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          {profilePreview ? (
-                            <img 
-                              src={profilePreview} 
-                              alt="Profile Preview" 
-                              className="w-100 h-100 object-fit-cover"
-                            />
-                          ) : (
-                            <i className="fas fa-user text-muted" style={{ fontSize: '3rem' }}></i>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex-grow-1">
-                        <label htmlFor="profileImage" className="form-label fw-semibold">
-                          Profile Image *
-                        </label>
-                        <input
-                          type="file"
-                          className="form-control"
-                          id="profileImage"
-                          accept="image/*"
-                          onChange={handleProfileImageChange}
-                          required
-                        />
-                        <div className="form-text">
-                          Accepted: JPG, PNG (Max 2MB)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Basic Information */}
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="staffId" className="form-label fw-semibold">
-                      <i className="fas fa-id-card me-2"></i>
-                      Staff ID *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="staffId"
-                      name="staffId"
-                      value={formData.staffId}
-                      onChange={handleChange}
-                      required
-                      placeholder="Enter unique staff ID"
-                    />
-                  </div>
-                  
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="staffName" className="form-label fw-semibold">
-                      <i className="fas fa-user me-2"></i>
-                      Staff Name *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="staffName"
-                      name="staffName"
-                      value={formData.staffName}
-                      onChange={handleChange}
-                      required
-                      placeholder="Enter full name"
-                    />
-                  </div>
-                </div>
-
-                {/* Contact Information */}
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="mobileNumber" className="form-label fw-semibold">
-                      <i className="fas fa-phone me-2"></i>
-                      Mobile Number *
-                    </label>
-                    <input
-                      type="tel"
-                      className="form-control"
-                      id="mobileNumber"
-                      name="mobileNumber"
-                      value={formData.mobileNumber}
-                      onChange={handleChange}
-                      required
-                      placeholder="10-digit mobile number"
-                    />
-                  </div>
-                  
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="email" className="form-label fw-semibold">
-                      <i className="fas fa-envelope me-2"></i>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                </div>
-
-                {/* Role and Joining Date */}
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="role" className="form-label fw-semibold">
-                      <i className="fas fa-briefcase me-2"></i>
-                      Role *
-                    </label>
-                    <select
-                      className="form-select"
-                      id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Role</option>
-                      {roles.map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="joiningDate" className="form-label fw-semibold">
-                      <i className="fas fa-calendar-alt me-2"></i>
-                      Joining Date *
-                    </label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      id="joiningDate"
-                      name="joiningDate"
-                      value={formData.joiningDate}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Experience and Blood Group */}
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="experience" className="form-label fw-semibold">
-                      <i className="fas fa-chart-line me-2"></i>
-                      Experience (Years) *
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      id="experience"
-                      name="experience"
-                      value={formData.experience}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      max="50"
-                      step="0.1"
-                      placeholder="Years of experience"
-                    />
-                  </div>
-                  
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="bloodGroup" className="form-label fw-semibold">
-                      <i className="fas fa-tint me-2"></i>
-                      Blood Group
-                    </label>
-                    <select
-                      className="form-select"
-                      id="bloodGroup"
-                      name="bloodGroup"
-                      value={formData.bloodGroup}
-                      onChange={handleChange}
-                    >
-                      <option value="">Select Blood Group</option>
-                      {bloodGroups.map(group => (
-                        <option key={group} value={group}>{group}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="password" className="form-label fw-semibold">
-                      <i className="fas fa-lock me-2"></i>
-                      Password *
-                    </label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      placeholder="Create password"
-                    />
-                  </div>
-                </div>
-
-                {/* Documents Upload */}
-                <div className="mb-4">
-                  <label htmlFor="documents" className="form-label fw-semibold">
-                    <i className="fas fa-file-upload me-2"></i>
-                    Upload Documents
-                  </label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    id="documents"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx"
-                    onChange={handleDocumentsChange}
-                  />
-                  <div className="form-text">
-                    Accepted: JPG, PNG, PDF, DOC, DOCX (Max 5MB per file)
-                  </div>
-
-                  {/* Documents Preview */}
-                  {documents.length > 0 && (
-                    <div className="mt-3">
-                      <h6 className="fw-semibold mb-2">Selected Documents:</h6>
-                      <div className="d-flex flex-wrap gap-2">
-                        {documents.map((file, index) => (
-                          <div 
-                            key={index}
-                            className="border rounded p-2 d-flex align-items-center"
-                            style={{ backgroundColor: '#f8f9fa' }}
-                          >
-                            <i className="fas fa-file me-2 text-primary"></i>
-                            <span className="small">{file.name}</span>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger ms-2"
-                              onClick={() => removeDocument(index)}
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Submit Button */}
-                <div className="d-flex gap-3 pt-3 border-top">
-                  <button
-                    type="submit"
-                    className="btn text-white fw-semibold px-4 py-2"
-                    style={{ backgroundColor: '#009788' }}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin me-2"></i>
-                        Adding Staff...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-user-plus me-2"></i>
-                        Add Staff
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary px-4 py-2"
-                    onClick={() => navigate('/staff')}
-                  >
-                    <i className="fas fa-times me-2"></i>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Add New Staff
+            </h1>
+            <p className="text-gray-500">
+              Create staff profile with role & documents
+            </p>
           </div>
+
+          <button
+            onClick={() => navigate("/staff")}
+            className="flex items-center gap-2 bg-white border border-gray-200 px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
+        </div>
+
+        {/* CARD */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-10">
+
+          {/* Alerts */}
+          {error && (
+            <div className="mb-6 bg-red-50 text-red-600 px-4 py-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 bg-green-50 text-green-600 px-4 py-3 rounded-lg border border-green-200">
+              {success}
+            </div>
+          )}
+
+          {/* Profile */}
+          {/* Profile Upload */}
+          <div className="flex items-center gap-6 mb-12">
+            <div className="w-24 h-24 rounded-full bg-gray-100 border flex items-center justify-center overflow-hidden">
+              {profilePreview ? (
+                <img
+                  src={profilePreview}
+                  className="w-full h-full object-cover"
+                  alt=""
+                />
+              ) : (
+                <User className="text-gray-400" size={32} />
+              )}
+            </div>
+
+            {/* Custom Upload */}
+            <label className="cursor-pointer">
+              <div className="
+      flex flex-col items-center justify-center
+      w-64 h-28
+      border-2 border-dashed border-gray-300
+      rounded-xl
+      hover:border-teal-500
+      hover:bg-teal-50
+      transition
+    ">
+                <span className="text-gray-500 font-medium">
+                  Click to upload profile
+                </span>
+
+                <span className="text-xs text-gray-400">
+                  JPG / PNG • Max 2MB
+                </span>
+              </div>
+
+              <input
+                type="file"
+                className="hidden"
+                onChange={handleProfileImageChange}
+              />
+            </label>
+          </div>
+
+          {/* FORM */}
+          <form className="grid md:grid-cols-2 gap-6" onSubmit={handleSubmit}>
+
+            <Input label="Staff ID" icon={<User size={18} />} name="staffId" value={formData.staffId} onChange={handleChange} />
+            <Input label="Staff Name" icon={<User size={18} />} name="staffName" value={formData.staffName} onChange={handleChange} />
+            <Input label="Mobile Number" icon={<Phone size={18} />} name="mobileNumber" value={formData.mobileNumber} onChange={handleChange} />
+            <Input label="Email" icon={<Mail size={18} />} name="email" value={formData.email} onChange={handleChange} />
+
+            <Select label="Role" icon={<Briefcase size={18} />} name="role" value={formData.role} onChange={handleChange} options={roles} />
+
+            <Input label="Joining Date" type="date" icon={<Calendar size={18} />} name="joiningDate" value={formData.joiningDate} onChange={handleChange} />
+
+            <Input label="Experience (Years)" icon={<Calendar size={18} />} name="experience" value={formData.experience} onChange={handleChange} />
+
+            <Select label="Blood Group" icon={<Droplet size={18} />} name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={bloodGroups} />
+
+            <Input label="Password" type="password" icon={<Lock size={18} />} name="password" value={formData.password} onChange={handleChange} />
+
+            {/* Documents */}
+            <div className="md:col-span-2">
+              <label className="font-semibold text-gray-700 block mb-2">
+                Upload Documents
+              </label>
+
+              <label className="cursor-pointer block">
+                <div className="
+      flex flex-col items-center justify-center
+      w-full h-36
+      border-2 border-dashed border-gray-300
+      rounded-xl
+      hover:border-indigo-500
+      hover:bg-indigo-50
+      transition
+    ">
+                  <File className="text-gray-400 mb-2" size={26} />
+
+                  <p className="text-gray-600 font-medium">
+                    Click to upload documents
+                  </p>
+
+                  <p className="text-xs text-gray-400">
+                    Images, PDF, DOC • Max 5MB
+                  </p>
+                </div>
+
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleDocumentsChange}
+                />
+              </label>
+
+              {/* File Preview */}
+              {documents.length > 0 && (
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {documents.map((file, i) => (
+                    <div
+                      key={i}
+                      className="
+            flex items-center gap-2
+            bg-gray-100
+            px-3 py-2
+            rounded-lg
+            border
+          "
+                    >
+                      <File size={16} className="text-indigo-500" />
+
+                      <span className="text-sm text-gray-700 max-w-[160px] truncate">
+                        {file.name}
+                      </span>
+
+                      <X
+                        size={16}
+                        className="cursor-pointer text-red-500 hover:scale-110 transition"
+                        onClick={() => removeDocument(i)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+            {/* Buttons */}
+            <div className="md:col-span-2 flex gap-4 mt-6">
+              <button
+                disabled={loading}
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold shadow-sm transition"
+              >
+                {loading ? "Adding Staff..." : "Add Staff"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/staff")}
+                className="flex-1 border border-gray-300 py-3 rounded-xl hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   );
 };
+
+/* ---------- PERFECT INPUT ---------- */
+
+const Input = ({ label, icon, ...props }) => (
+  <div>
+    <label className="block font-semibold text-gray-700 mb-1">
+      {label}
+    </label>
+
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        {icon}
+      </span>
+
+      <input
+        {...props}
+        className="
+        w-full h-[48px]
+        pl-10 pr-4
+        border border-gray-200
+        rounded-xl
+        bg-white
+        focus:ring-2 focus:ring-teal-500
+        outline-none
+        transition
+        "
+      />
+    </div>
+  </div>
+);
+
+/* ---------- PERFECT SELECT ---------- */
+
+const Select = ({ label, icon, options, ...props }) => (
+  <div>
+    <label className="block font-semibold text-gray-700 mb-1">
+      {label}
+    </label>
+
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        {icon}
+      </span>
+
+      <select
+        {...props}
+        className="
+        w-full h-[48px]
+        pl-10 pr-4
+        border border-gray-200
+        rounded-xl
+        bg-white
+        focus:ring-2 focus:ring-teal-500
+        outline-none
+        appearance-none
+        "
+      >
+        <option value="">Select</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+);
 
 export default AddStaff;

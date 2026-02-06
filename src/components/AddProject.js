@@ -1,571 +1,325 @@
-// src/components/AddProject.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FolderPlus, Upload, Plus, X } from "lucide-react";
 
 const AddProject = () => {
+  const navigate = useNavigate();
+
+  /* ---------------- STATE ---------------- */
+
   const [formData, setFormData] = useState({
-    projectid: '',
-    projectname: '',
-    clientname: '',
-    mobilenumber: '',
-    email: '',
-    selectcategory: 'website',
-    startDate: '',
-    projectHandoverDate: '',
-    deadlineDate: '',
-    projectCost: '',
-    milestone: '',
+    projectid: "",
+    projectname: "",
+    clientname: "",
+    mobilenumber: "",
+    email: "",
+    selectcategory: "website",
+    startDate: "",
+    projectHandoverDate: "",
+    deadlineDate: "",
+    projectCost: "",
+    milestone: "",
     teamMembers: {
       frontend: [],
       backend: [],
       designer: [],
       tester: [],
-      manager: []
+      manager: [],
     },
-    status: 'active',
-    milestonePayments: []
+    status: "active",
+    milestonePayments: [],
   });
-  
+
+  const [teamInput, setTeamInput] = useState({});
   const [file, setFile] = useState(null);
   const [quotationFile, setQuotationFile] = useState(null);
-  const [teamMemberInputs, setTeamMemberInputs] = useState({
-    frontend: '',
-    backend: '',
-    designer: '',
-    tester: '',
-    manager: ''
-  });
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const navigate = useNavigate();
+  /* ---------------- HANDLERS ---------------- */
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleTeamMemberInputChange = (role, value) => {
-    setTeamMemberInputs(prev => ({
-      ...prev,
-      [role]: value
-    }));
-  };
+  const addMember = (role) => {
+    const val = teamInput[role]?.trim();
+    if (!val) return;
 
-  const addTeamMember = (role) => {
-    const memberName = teamMemberInputs[role].trim();
-    if (memberName && !formData.teamMembers[role].includes(memberName)) {
-      setFormData(prev => ({
-        ...prev,
-        teamMembers: {
-          ...prev.teamMembers,
-          [role]: [...prev.teamMembers[role], memberName]
-        }
-      }));
-      setTeamMemberInputs(prev => ({
-        ...prev,
-        [role]: ''
-      }));
-    }
-  };
-
-  const removeTeamMember = (role, index) => {
-    setFormData(prev => ({
-      ...prev,
+    setFormData((p) => ({
+      ...p,
       teamMembers: {
-        ...prev.teamMembers,
-        [role]: prev.teamMembers[role].filter((_, i) => i !== index)
-      }
+        ...p.teamMembers,
+        [role]: [...p.teamMembers[role], val],
+      },
+    }));
+
+    setTeamInput((p) => ({ ...p, [role]: "" }));
+  };
+
+  const removeMember = (role, index) => {
+    setFormData((p) => ({
+      ...p,
+      teamMembers: {
+        ...p.teamMembers,
+        [role]: p.teamMembers[role].filter((_, i) => i !== index),
+      },
     }));
   };
 
-  // Handle milestone payment changes
-  const handleMilestonePaymentChange = (index, field, value) => {
-    setFormData(prev => {
-      const updatedPayments = [...prev.milestonePayments];
-      
-      // If payment doesn't exist for this index, create it
-      if (!updatedPayments[index]) {
-        updatedPayments[index] = { amount: '', description: '', paymentMode: '' };
-      }
-      
-      // Update the specific field
-      updatedPayments[index] = {
-        ...updatedPayments[index],
-        [field]: value
-      };
-      
-      return {
-        ...prev,
-        milestonePayments: updatedPayments
-      };
-    });
-  };
+  /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
-  setSuccess('');
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    // Filter out empty team member arrays
-    const filteredTeamMembers = Object.fromEntries(
-      Object.entries(formData.teamMembers).filter(([_, value]) => value.length > 0)
-    );
+    const fd = new FormData();
 
-    // Filter out empty milestone payments
-    const filteredMilestonePayments = formData.milestonePayments.filter(payment => 
-      payment && (payment.amount || payment.description || payment.paymentMode)
-    );
-
-    // Create FormData
-    const formDataToSend = new FormData();
-    
-    // Append all basic fields
-    const fields = [
-      'projectid', 'projectname', 'clientname', 'mobilenumber', 'email',
-      'selectcategory', 'startDate', 'projectHandoverDate', 'deadlineDate',
-      'projectCost', 'milestone', 'status'
-    ];
-    
-    fields.forEach(field => {
-      if (formData[field]) {
-        formDataToSend.append(field, formData[field]);
-      }
+    Object.entries(formData).forEach(([k, v]) => {
+      if (k !== "teamMembers" && k !== "milestonePayments")
+        fd.append(k, v);
     });
 
-    // Append teamMembers as JSON string
-    if (Object.keys(filteredTeamMembers).length > 0) {
-      formDataToSend.append('teamMembers', JSON.stringify(filteredTeamMembers));
+    fd.append("teamMembers", JSON.stringify(formData.teamMembers));
+    fd.append(
+      "milestonePayments",
+      JSON.stringify(formData.milestonePayments)
+    );
+
+    if (file) fd.append("uploadfile", file);
+    if (quotationFile) fd.append("quotationfile", quotationFile);
+
+    try {
+      const res = await fetch(
+        "http://31.97.206.144:5000/api/projects",
+        {
+          method: "POST",
+          body: fd,
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuccess("Project created successfully!");
+        setTimeout(() => navigate("/projects"), 1200);
+      } else setError(data.message);
+    } catch {
+      setError("Network error");
     }
 
-    // Append milestonePayments as JSON string
-    if (filteredMilestonePayments.length > 0) {
-      formDataToSend.append('milestonePayments', JSON.stringify(filteredMilestonePayments));
-    }
-
-    // Append files
-    if (file) {
-      formDataToSend.append('uploadfile', file);
-    }
-    if (quotationFile) {
-      formDataToSend.append('quotationfile', quotationFile);
-    }
-
-    // 🟢 DEBUG: Log FormData contents
-    console.log('📤 Sending FormData:');
-    for (let [key, value] of formDataToSend.entries()) {
-      console.log(`${key}:`, value);
-    }
-
-    const res = await fetch('http://31.97.206.144:5000/api/projects', {
-      method: 'POST',
-      body: formDataToSend
-      // NOTE: Don't set Content-Type header for FormData - browser will set it automatically with boundary
-    });
-
-    const data = await res.json();
-    console.log('📨 Backend Response:', data);
-
-    if (data.success) {
-      setSuccess('Project created successfully!');
-      setTimeout(() => navigate('/projects'), 1500);
-    } else {
-      setError(data.message || 'Failed to create project');
-    }
-  } catch (err) {
-    console.error('❌ Network error:', err);
-    setError('Network error. Please try again.');
-  } finally {
     setLoading(false);
-  }
-};
-  // Generate milestone options from 1 to 10
-  const milestoneOptions = Array.from({ length: 10 }, (_, i) => i + 1);
+  };
 
-  // Check if project cost is filled to show milestone field
-  const showMilestone = formData.projectCost !== '';
-
-  // Generate milestone payment rows based on selected milestone
-  const milestonePaymentRows = formData.milestone ? Array.from({ length: parseInt(formData.milestone) }, (_, i) => i) : [];
-
-  const teamRoles = [
-    { key: 'frontend', label: 'Frontend Developers' },
-    { key: 'backend', label: 'Backend Developers' },
-    { key: 'designer', label: 'Designers' },
-    { key: 'tester', label: 'Testers' },
-    { key: 'manager', label: 'Project Managers' }
+  const roles = [
+    "frontend",
+    "backend",
+    "designer",
+    "tester",
+    "manager",
   ];
 
-  const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Cheque', 'Credit Card', 'Debit Card'];
-
   return (
-    <div className="container-fluid">
-      <h2 className="mb-4 fw-bold" style={{ color: '#009788' }}>Create New Project</h2>
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="max-w-6xl mx-auto space-y-8">
 
-      <div className="card border-0 shadow-sm">
-        <div className="card-header bg-white border-bottom-2" style={{ borderColor: '#009788' }}>
-          <h4 className="mb-0 fw-bold" style={{ color: '#009788' }}>Project Information</h4>
+        {/* HEADER */}
+
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-teal-100">
+            <FolderPlus className="text-teal-700" />
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800">
+              Create New Project
+            </h1>
+            <p className="text-slate-500">
+              Fill the details to launch a new project
+            </p>
+          </div>
         </div>
-        <div className="card-body">
-          {error && <div className="alert alert-danger">{error}</div>}
-          {success && <div className="alert alert-success">{success}</div>}
 
-          <form onSubmit={handleSubmit}>
-            {/* Project ID & Basic Info */}
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Project ID *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="projectid"
-                  value={formData.projectid}
-                  onChange={handleChange}
-                  placeholder="Enter unique project ID"
-                  required
-                />
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Project Name *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="projectname"
-                  value={formData.projectname}
-                  onChange={handleChange}
-                  placeholder="Enter project name"
-                  required
-                />
-              </div>
-            </div>
+        {/* ALERTS */}
 
-            {/* Client Information */}
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Client Name *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="clientname"
-                  value={formData.clientname}
-                  onChange={handleChange}
-                  placeholder="Enter client name"
-                  required
-                />
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Mobile Number *</label>
-                <input
-                  type="tel"
-                  className="form-control"
-                  name="mobilenumber"
-                  value={formData.mobilenumber}
-                  onChange={handleChange}
-                  placeholder="Enter mobile number"
-                  required
-                />
-              </div>
-            </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        )}
 
-            <div className="row">
-              <div className="col-md-12 mb-3">
-                <label className="form-label fw-semibold">Email Address *</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  required
-                />
-              </div>
-            </div>
+        {success && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-xl">
+            {success}
+          </div>
+        )}
 
-            {/* Project Details */}
-            <div className="row">
-              <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold">Category *</label>
-                <select
-                  className="form-select"
-                  name="selectcategory"
-                  value={formData.selectcategory}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="website">Website</option>
-                  <option value="mobile app">Mobile App</option>
-                  <option value="digital market">Digital Marketing</option>
-                  <option value="software">Software Development</option>
-                  <option value="consulting">Consulting</option>
-                </select>
-              </div>
-              
-              {/* Milestone Field - Only shown when project cost is filled */}
-              {showMilestone && (
-                <div className="col-md-4 mb-3">
-                  <label className="form-label fw-semibold">Milestone *</label>
-                  <select
-                    className="form-select"
-                    name="milestone"
-                    value={formData.milestone}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Milestone</option>
-                    {milestoneOptions.map(num => (
-                      <option key={num} value={num.toString()}>
-                        Milestone {num}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
-              <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold">Status</label>
-                <select
-                  className="form-select"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                >
-                  <option value="active">Active</option>
-                  <option value="on hold">On Hold</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-            </div>
+        {/* FORM */}
 
-            {/* Project Dates */}
-            <div className="row">
-              <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold">Start Date *</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold">Project Handover Date *</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  name="projectHandoverDate"
-                  value={formData.projectHandoverDate}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold">Deadline Date *</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  name="deadlineDate"
-                  value={formData.deadlineDate}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 space-y-10"
+        >
+          {/* PROJECT INFO */}
 
-            {/* Financial Information */}
-            <div className="row">
-              <div className="col-md-12 mb-3">
-                <label className="form-label fw-semibold">Project Cost *</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  name="projectCost"
-                  value={formData.projectCost}
-                  onChange={handleChange}
-                  placeholder="Total project cost"
-                  required
-                  min="0"
-                />
-              </div>
-            </div>
+          <Section title="Project Information">
+            <Grid>
+              <Input name="projectid" placeholder="Project ID" onChange={handleChange} />
+              <Input name="projectname" placeholder="Project Name" onChange={handleChange} />
+              <Input name="clientname" placeholder="Client Name" onChange={handleChange} />
+              <Input name="mobilenumber" placeholder="Mobile Number" onChange={handleChange} />
+              <Input name="email" placeholder="Email Address" onChange={handleChange} />
 
-            {/* Milestone Payments Section */}
-            {formData.milestone && milestonePaymentRows.length > 0 && (
-              <div className="mb-4">
-                <h5 className="fw-semibold mb-3" style={{ color: '#009788' }}>
-                  Milestone Payments (Milestone {formData.milestone})
-                </h5>
-                
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Milestone #</th>
-                        <th>Amount *</th>
-                        <th>Description</th>
-                        <th>Payment Mode</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {milestonePaymentRows.map((_, index) => (
-                        <tr key={index}>
-                          <td className="align-middle">
-                            <strong>Milestone {index + 1}</strong>
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              className="form-control"
-                              placeholder="Enter amount"
-                              value={formData.milestonePayments[index]?.amount || ''}
-                              onChange={(e) => handleMilestonePaymentChange(index, 'amount', e.target.value)}
-                              min="0"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="Enter description"
-                              value={formData.milestonePayments[index]?.description || ''}
-                              onChange={(e) => handleMilestonePaymentChange(index, 'description', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <select
-                              className="form-select"
-                              value={formData.milestonePayments[index]?.paymentMode || ''}
-                              onChange={(e) => handleMilestonePaymentChange(index, 'paymentMode', e.target.value)}
-                            >
-                              <option value="">Select Mode</option>
-                              {paymentModes.map(mode => (
-                                <option key={mode} value={mode}>{mode}</option>
-                              ))}
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="form-text">
-                  Note: You can fill any field in any row. Only filled fields will be saved.
-                </div>
-              </div>
-            )}
+              <Select name="selectcategory" onChange={handleChange}>
+                <option value="website">Website</option>
+                <option value="mobile app">Mobile App</option>
+                <option value="software">Software</option>
+                <option value="digital market">Digital Marketing</option>
+              </Select>
+            </Grid>
+          </Section>
 
-            {/* Team Members Section - Manual Input */}
-            <div className="mb-4">
-              <h5 className="fw-semibold mb-3" style={{ color: '#009788' }}>Team Members</h5>
-              
-              <div className="row">
-                {teamRoles.map(({ key, label }) => (
-                  <div key={key} className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold">{label}</label>
-                    <div className="input-group mb-2">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder={`Enter ${label.toLowerCase()} name`}
-                        value={teamMemberInputs[key]}
-                        onChange={(e) => handleTeamMemberInputChange(key, e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTeamMember(key))}
-                      />
-                      <button
-                        type="button"
-                        className="btn text-white"
-                        style={{ backgroundColor: '#009788' }}
-                        onClick={() => addTeamMember(key)}
-                      >
-                        Add
-                      </button>
-                    </div>
-                    
-                    {/* Display added team members for this role */}
-                    {formData.teamMembers[key].length > 0 && (
-                      <div className="mt-2">
-                        <div className="d-flex flex-wrap gap-2">
-                          {formData.teamMembers[key].map((member, index) => (
-                            <span key={index} className="badge bg-primary d-flex align-items-center">
-                              {member}
-                              <button
-                                type="button"
-                                className="btn-close btn-close-white ms-2"
-                                style={{ fontSize: '0.6rem' }}
-                                onClick={() => removeTeamMember(key, index)}
-                                aria-label="Remove"
-                              />
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+          {/* TIMELINE */}
+
+          <Section title="Project Timeline">
+            <Grid>
+              <Input type="date" name="startDate" onChange={handleChange} />
+              <Input type="date" name="projectHandoverDate" onChange={handleChange} />
+              <Input type="date" name="deadlineDate" onChange={handleChange} />
+              <Input type="number" name="projectCost" placeholder="Project Cost" onChange={handleChange} />
+            </Grid>
+          </Section>
+
+          {/* TEAM */}
+
+          <Section title="Team Members">
+            <div className="grid md:grid-cols-2 gap-6">
+              {roles.map((role) => (
+                <div key={role}>
+                  <label className="font-semibold text-slate-700 capitalize">
+                    {role}
+                  </label>
+
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      className="w-full h-11 rounded-xl border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder={`Add ${role}`}
+                      value={teamInput[role] || ""}
+                      onChange={(e) =>
+                        setTeamInput({
+                          ...teamInput,
+                          [role]: e.target.value,
+                        })
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => addMember(role)}
+                      className="h-11 px-4 rounded-xl bg-teal-600 text-white hover:bg-teal-700 flex items-center"
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* File Uploads */}
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Upload Quotation (Optional)</label>
-                <input
-                  type="file"
-                  className="form-control"
-                  onChange={(e) => setQuotationFile(e.target.files[0])}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                />
-                <div className="form-text">Accepted formats: PDF, DOC, DOCX, XLS, XLSX</div>
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold">Upload Project File (Optional)</label>
-                <input
-                  type="file"
-                  className="form-control"
-                  onChange={(e) => setFile(e.target.files[0])}
-                  accept="image/*,.pdf,.doc,.docx,.zip,.rar"
-                />
-                <div className="form-text">Accepted formats: Images, PDF, DOC, DOCX, ZIP, RAR</div>
-              </div>
-            </div>
+                  {/* TAGS */}
 
-            {/* Submit Button */}
-            <div className="d-flex gap-2">
-              <button
-                type="submit"
-                className="btn text-white fw-semibold"
-                style={{ backgroundColor: '#009788' }}
-                disabled={loading || (showMilestone && !formData.milestone)}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Creating Project...
-                  </>
-                ) : (
-                  'Create Project'
-                )}
-              </button>
-              
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={() => navigate('/projects')}
-              >
-                Cancel
-              </button>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {formData.teamMembers[role].map((member, i) => (
+                      <span
+                        key={i}
+                        className="flex items-center gap-1 bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-sm font-semibold"
+                      >
+                        {member}
+                        <X
+                          size={14}
+                          className="cursor-pointer hover:text-red-500"
+                          onClick={() => removeMember(role, i)}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          </form>
-        </div>
+          </Section>
+
+          {/* FILE UPLOAD */}
+
+          <Section title="Attachments">
+            <div className="grid md:grid-cols-2 gap-6">
+              <UploadBox label="Upload Quotation" setFile={setQuotationFile} />
+              <UploadBox label="Upload Project Files" setFile={setFile} />
+            </div>
+          </Section>
+
+          {/* BUTTONS */}
+
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <button
+              type="button"
+              onClick={() => navigate("/projects")}
+              className="px-6 py-2 rounded-xl border border-slate-300 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              disabled={loading}
+              className="px-8 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 font-semibold"
+            >
+              {loading ? "Creating..." : "Create Project"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
+
+/* ---------- SMALL UI COMPONENTS ---------- */
+
+const Section = ({ title, children }) => (
+  <div>
+    <h2 className="text-xl font-semibold text-slate-800 mb-4">
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const Grid = ({ children }) => (
+  <div className="grid md:grid-cols-2 gap-6">{children}</div>
+);
+
+const Input = ({ ...props }) => (
+  <input
+    {...props}
+    required
+    className="w-full h-11 rounded-xl border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+  />
+);
+
+const Select = ({ children, ...props }) => (
+  <select
+    {...props}
+    className="w-full h-11 rounded-xl border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+  >
+    {children}
+  </select>
+);
+
+const UploadBox = ({ label, setFile }) => (
+  <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-2xl p-8 cursor-pointer hover:bg-slate-50 transition">
+    <Upload className="text-slate-400 mb-2" />
+    <p className="font-semibold text-slate-700">{label}</p>
+    <input
+      type="file"
+      hidden
+      onChange={(e) => setFile(e.target.files[0])}
+    />
+  </label>
+);
 
 export default AddProject;
