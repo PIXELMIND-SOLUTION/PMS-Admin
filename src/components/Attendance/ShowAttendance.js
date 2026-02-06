@@ -31,7 +31,7 @@ const ShowAttendance = () => {
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const res = await axios.get('https://admin-emp.onrender.com/api/getall-attendance');
+        const res = await axios.get('http://31.97.206.144:5000/api/getall-attendance');
         if (res.data.success) {
           // Map API data to consistent format
           const mappedData = res.data.data.map((a) => ({
@@ -82,7 +82,7 @@ const ShowAttendance = () => {
       const emp = filteredData.find((a) => a.name === name);
       if (!emp) return;
 
-      const res = await axios.get(`https://admin-emp.onrender.com/api/attendance/staff/${emp.staffId}`);
+      const res = await axios.get(`http://31.97.206.144:5000/api/attendance/staff/${emp.staffId}`);
       if (res.data.success) {
         const empData = res.data.data.map((a) => ({
           id: a._id,

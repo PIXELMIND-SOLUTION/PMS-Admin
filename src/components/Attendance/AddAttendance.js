@@ -68,7 +68,7 @@ const AddAttendance = () => {
 
     try {
       const res = await axios.post(
-        "https://admin-emp.onrender.com/api/create-attendance",
+        "http://31.97.206.144:5000/api/create-attendance",
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
