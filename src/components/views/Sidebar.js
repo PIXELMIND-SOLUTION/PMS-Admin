@@ -13,13 +13,27 @@ import {
   MdAddCircleOutline,
   MdListAlt,
   MdClose,
-  MdDownload
+  MdDownload,
+  MdInsights,
+  MdSettings
 } from 'react-icons/md';
 
-const Sidebar = ({ isOpen, onLogout, isMobile, onClose }) => {
+const Sidebar = ({ isOpen, onLogout, isMobile, isTablet, onClose }) => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState({});
   const [hoveredItem, setHoveredItem] = useState(null);
+
+  // Restore open menus based on current path
+  useEffect(() => {
+    const paths = [
+      'staff', 'projects', 'assigned-works', 'attendance', 'invoice', 'payslip'
+    ];
+    paths.forEach(path => {
+      if (location.pathname.includes(path) && !openMenus[path]) {
+        setOpenMenus(prev => ({ ...prev, [path]: true }));
+      }
+    });
+  }, [location.pathname]);
 
   const toggleSubmenu = (path) => {
     setOpenMenus((prev) => ({
@@ -33,7 +47,6 @@ const Sidebar = ({ isOpen, onLogout, isMobile, onClose }) => {
     if (onLogout) onLogout();
   };
 
-  // Close sidebar when a link is clicked on mobile
   const handleLinkClick = () => {
     if (isMobile) {
       onClose();
@@ -41,131 +54,118 @@ const Sidebar = ({ isOpen, onLogout, isMobile, onClose }) => {
   };
 
   const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: <MdDashboard /> },
+    { 
+      path: '/dashboard', 
+      label: 'Dashboard', 
+      icon: <MdDashboard />,
+      description: 'Overview & analytics'
+    },
     {
-      path: 'staff',
-      label: 'Staff',
+      id: 'staff',
+      label: 'Staff Management',
       icon: <MdPeople />,
+      description: 'Manage team members',
       submenu: [
-        { path: '/add-staff', label: 'Add Staff', icon: <MdAddCircleOutline /> },
-        { path: '/staff', label: 'Staff Members', icon: <MdListAlt /> },
+        { path: '/add-staff', label: 'Add Staff', icon: <MdAddCircleOutline />, description: 'Create new profile' },
+        { path: '/staff', label: 'Staff Directory', icon: <MdListAlt />, description: 'View all members' },
       ],
     },
     {
-      path: 'projects',
+      id: 'projects',
       label: 'Projects',
       icon: <MdFolder />,
+      description: 'Track progress',
       submenu: [
-        { path: '/add-project', label: 'Add Project', icon: <MdAddCircleOutline /> },
-        { path: '/projects', label: 'Projects List', icon: <MdListAlt /> },
+        { path: '/add-project', label: 'New Project', icon: <MdAddCircleOutline />, description: 'Create project' },
+        { path: '/projects', label: 'Project List', icon: <MdListAlt />, description: 'All projects' },
       ],
     },
     {
-      path: 'assigned-works',
-      label: 'Assigned Works',
+      id: 'assigned-works',
+      label: 'Work Allocation',
       icon: <MdAssignment />,
+      description: 'Tasks & assignments',
       submenu: [
-        { path: '/add-worksheet', label: 'Add Worksheet', icon: <MdAddCircleOutline /> },
-        { path: '/assigned-works', label: 'Assigned Works', icon: <MdListAlt /> },
+        { path: '/add-worksheet', label: 'New Worksheet', icon: <MdAddCircleOutline />, description: 'Assign work' },
+        { path: '/assigned-works', label: 'All Worksheets', icon: <MdListAlt />, description: 'View assignments' },
       ],
     },
     {
-      path: 'attendance',
+      id: 'attendance',
       label: 'Attendance',
       icon: <MdSchedule />,
+      description: 'Time tracking',
       submenu: [
-        { path: '/add-attendance', label: 'Add Attendance', icon: <MdAddCircleOutline /> },
-        { path: '/attendance', label: 'Show Attendance', icon: <MdListAlt /> },
+        { path: '/add-attendance', label: 'Mark Attendance', icon: <MdAddCircleOutline />, description: 'Daily entry' },
+        { path: '/attendance', label: 'Attendance Log', icon: <MdListAlt />, description: 'History' },
       ],
     },
     {
-      path: 'invoice',
-      label: 'Invoice',
+      id: 'invoice',
+      label: 'Invoicing',
       icon: <MdFolder />,
+      description: 'Billing & payments',
       submenu: [
-        { path: '/create-invoice', label: 'Create Invoice', icon: <MdAddCircleOutline /> },
-        { path: '/invoices', label: 'Show Invoice', icon: <MdListAlt /> },
-        { path: '/invoices1', label: 'Advace Invoice', icon: <MdDownload /> },
+        { path: '/create-invoice', label: 'Create Invoice', icon: <MdAddCircleOutline />, description: 'New invoice' },
+        { path: '/invoices', label: 'Invoice List', icon: <MdListAlt />, description: 'All invoices' },
+        { path: '/invoices1', label: 'Advanced Invoice', icon: <MdDownload />, description: 'Pro format' },
       ],
     },
     {
-      path: 'payslip',
-      label: 'Payslip',
+      id: 'payslip',
+      label: 'Payroll',
       icon: <MdAssignment />,
+      description: 'Salary processing',
       submenu: [
-        { path: '/create-payslip', label: 'Create Payslip', icon: <MdAddCircleOutline /> },
-        { path: '/payslips', label: 'Show Payslips', icon: <MdListAlt /> },
+        { path: '/create-payslip', label: 'Generate Payslip', icon: <MdAddCircleOutline />, description: 'Monthly payroll' },
+        { path: '/payslips', label: 'Payslip History', icon: <MdListAlt />, description: 'View all' },
       ],
     },
   ];
 
   const bottomMenuItems = [
-    { path: '#', label: 'Change Password', icon: <MdLock /> },
+    { path: '/analytics', label: 'Analytics', icon: <MdInsights />, description: 'Reports & insights' },
+    { path: '/settings', label: 'Settings', icon: <MdSettings />, description: 'Preferences' },
+    { path: '/change-password', label: 'Security', icon: <MdLock />, description: 'Change password' },
   ];
 
   return (
     <>
       <style>{`
-        @keyframes slideInFromLeft {
-          from {
-            transform: translateX(-100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+        @keyframes slideIn {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(64, 224, 208, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(64, 224, 208, 0); }
         }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.8;
-          }
+        
+        .sidebar-premium {
+          background: linear-gradient(165deg, #0b2f2f 0%, #063737 30%, #004d4d 100%);
+          box-shadow: 20px 0 40px rgba(0, 77, 77, 0.25);
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+          animation: slideIn 0.5s cubic-bezier(0.2, 0.9, 0.4, 1);
         }
-
-        .premium-sidebar {
-          animation: slideInFromLeft 0.4s ease;
+        
+        .menu-header-premium {
+          background: rgba(255, 255, 255, 0.03);
+          border-bottom: 1px solid rgba(64, 224, 208, 0.2);
+          backdrop-filter: blur(10px);
         }
-
-        .sidebar-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-          transition: background 0.3s ease;
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.4);
-        }
-
-        .menu-item-premium {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        .menu-item-ultra {
+          transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1);
+          border-radius: 16px;
+          margin: 6px 12px;
+          padding: 12px 16px;
+          color: rgba(255, 255, 255, 0.85);
           position: relative;
           overflow: hidden;
         }
-
-        .menu-item-premium::before {
+        
+        .menu-item-ultra::before {
           content: '';
           position: absolute;
           left: 0;
@@ -175,222 +175,205 @@ const Sidebar = ({ isOpen, onLogout, isMobile, onClose }) => {
           background: linear-gradient(180deg, #40E0D0, #00CED1);
           transform: scaleY(0);
           transition: transform 0.3s ease;
-          origin: top;
+          transform-origin: top;
+          border-radius: 0 4px 4px 0;
         }
-
-        .menu-item-premium:hover::before {
+        
+        .menu-item-ultra:hover::before {
           transform: scaleY(1);
         }
-
+        
+        .menu-item-ultra:hover {
+          background: rgba(255, 255, 255, 0.06);
+          color: white;
+          padding-left: 20px;
+        }
+        
         .menu-item-active {
-          background: linear-gradient(90deg, rgba(64, 224, 208, 0.3), transparent);
+          background: linear-gradient(90deg, rgba(64, 224, 208, 0.2), rgba(64, 224, 208, 0.05));
+          color: white !important;
           border-left: 4px solid #40E0D0;
+          border-radius: 16px 0 0 16px;
         }
-
-        .submenu-item {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border-radius: 8px;
-          margin: 4px 12px;
-          padding: 10px 12px;
-          position: relative;
+        
+        .menu-item-active .icon-wrapper {
+          background: rgba(64, 224, 208, 0.3);
+          color: #40E0D0;
         }
-
-        .submenu-item::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 3px;
-          height: 0;
-          background: linear-gradient(180deg, #40E0D0, #00CED1);
-          border-radius: 2px;
-          transition: height 0.3s ease;
-        }
-
-        .submenu-item:hover::before {
-          height: 20px;
-        }
-
-        .submenu-item-active {
-          background: rgba(64, 224, 208, 0.25);
-          border-left: 3px solid #40E0D0;
-          padding-left: 14px;
-        }
-
-        .submenu-item-active::before {
-          height: 100%;
-          background: linear-gradient(180deg, #40E0D0, #00CED1);
-        }
-
+        
         .icon-wrapper {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
           transition: all 0.3s ease;
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 18px;
         }
-
-        .menu-item-premium:hover .icon-wrapper {
-          background: rgba(255, 255, 255, 0.15);
-          transform: scale(1.1);
+        
+        .submenu-container {
+          margin-left: 20px;
+          padding-left: 16px;
+          border-left: 1px solid rgba(64, 224, 208, 0.3);
+          position: relative;
         }
-
-        .menu-item-active .icon-wrapper {
-          background: rgba(64, 224, 208, 0.3);
+        
+        .submenu-item {
+          display: flex;
+          align-items: center;
+          padding: 10px 16px;
+          margin: 4px 0;
+          color: rgba(255, 255, 255, 0.75);
+          border-radius: 14px;
+          transition: all 0.3s ease;
+          font-size: 13px;
+          position: relative;
         }
-
-        .logout-btn {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          background: rgba(255, 59, 48, 0.1);
-          border-left: 4px solid transparent;
+        
+        .submenu-item:hover {
+          background: rgba(64, 224, 208, 0.15);
+          color: white;
+          padding-left: 22px;
         }
-
-        .logout-btn:hover {
-          background: rgba(255, 59, 48, 0.2);
-          border-left-color: #ff6b5b;
-          padding-left: calc(1rem + 4px);
+        
+        .submenu-item-active {
+          background: rgba(64, 224, 208, 0.2);
+          color: white;
+          border-left: 3px solid #40E0D0;
+          border-radius: 14px 0 0 14px;
+        }
+        
+        .logout-btn-premium {
+          background: rgba(255, 77, 109, 0.08);
+          border: 1px solid rgba(255, 77, 109, 0.2);
+          border-radius: 16px;
+          margin: 12px;
+          padding: 14px 18px;
+          transition: all 0.4s ease;
+        }
+        
+        .logout-btn-premium:hover {
+          background: rgba(255, 77, 109, 0.15);
+          border-color: rgba(255, 77, 109, 0.4);
+          transform: translateY(-2px);
+        }
+        
+        .badge-premium {
+          background: rgba(64, 224, 208, 0.25);
+          padding: 2px 10px;
+          border-radius: 100px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #40E0D0;
+          border: 1px solid rgba(64, 224, 208, 0.4);
         }
       `}</style>
 
       <div style={{
-        width: isMobile ? '280px' : '260px',
-        background: 'linear-gradient(135deg, #008b8b 0%, #006666 100%)',
-        color: 'white',
-        position: isMobile ? 'fixed' : 'fixed',
+        width: isMobile ? '300px' : (isTablet ? '280px' : '280px'),
+        position: 'fixed',
         height: '100vh',
-        transition: 'transform 0.3s ease, left 0.3s ease',
-        zIndex: 1000,
-        left: isMobile ? (isOpen ? '0' : '-280px') : (isOpen ? '0' : '-260px'),
+        left: isOpen ? '0' : (isMobile ? '-300px' : '-280px'),
+        transition: 'left 0.4s cubic-bezier(0.2, 0.9, 0.4, 1)',
+        zIndex: 1100,
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '8px 0 32px rgba(0, 0, 0, 0.2)',
-        backdropFilter: 'blur(10px)',
-      }} className="premium-sidebar">
-        {/* Header */}
-        <div style={{
-          padding: '24px 20px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%)',
-          backdropFilter: 'blur(20px)',
-          position: 'relative'
-        }}>
+      }} className="sidebar-premium">
+        
+        {/* Premium Header with Close */}
+        <div className="menu-header-premium d-flex align-items-center justify-content-between p-4">
+          <div className="d-flex align-items-center gap-3">
+            <div style={{
+              width: '44px',
+              height: '44px',
+              background: 'linear-gradient(135deg, #40E0D0, #00CED1)',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 20px rgba(64, 224, 208, 0.3)'
+            }}>
+              <span className="fw-bold text-white" style={{ fontSize: '22px' }}>P</span>
+            </div>
+            <div>
+              <h5 className="mb-0 fw-bold text-white" style={{ letterSpacing: '0.5px' }}>Pixelmind</h5>
+              <span className="badge-premium">v3.0 · ULTRA</span>
+            </div>
+          </div>
           {isMobile && (
             <button
-              className="absolute right-4 top-4 p-2 text-white bg-white/10 border border-white/20 rounded-lg flex items-center justify-center hover:bg-white/20 transition-all duration-300"
               onClick={onClose}
-              title="Close menu"
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                width: '40px',
+                height: '40px',
+                borderRadius: '14px',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              className="ultra-transition"
             >
-              <MdClose size={20} />
+              <MdClose size={22} />
             </button>
           )}
-          <h5 style={{
-            marginBottom: '0',
-            fontWeight: '700',
-            fontSize: '18px',
-            letterSpacing: '0.5px',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #40E0D0, #00CED1)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            Admin Panel
-          </h5>
         </div>
 
-        {/* Menu Items Container */}
-        <div className="sidebar-scroll" style={{
-          flex: 1,
-          overflowY: 'auto',
+        {/* Scrollable Menu Area */}
+        <div className="flex-grow-1 overflow-auto py-3" style={{
           scrollbarWidth: 'thin',
-          msOverflowStyle: 'thin-scrollbar',
-          paddingTop: '8px',
-          paddingBottom: '12px',
+          scrollbarColor: 'rgba(64,224,208,0.3) transparent'
         }}>
           {menuItems.map((item, index) => (
-            <div key={item.path} style={{ animation: `fadeInUp 0.4s ease ${index * 0.05}s backwards` }}>
+            <div key={item.id || item.path} style={{ animation: `slideIn 0.3s ease ${index * 0.05}s backwards` }}>
               {item.submenu ? (
                 <>
                   <div
-                    className="menu-item-premium"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingLeft: '16px',
-                      paddingRight: '16px',
-                      paddingTop: '12px',
-                      paddingBottom: '12px',
-                      color: 'white',
-                      cursor: 'pointer',
-                      marginBottom: '4px',
-                    }}
-                    onClick={() => toggleSubmenu(item.path)}
-                    onMouseEnter={(e) => {
-                      if (!isMobile) {
-                        setHoveredItem(item.path);
-                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isMobile) {
-                        setHoveredItem(null);
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
+                    className="menu-item-ultra d-flex align-items-center justify-content-between"
+                    onClick={() => toggleSubmenu(item.id)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div className="icon-wrapper" style={{ fontSize: '18px' }}>
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="icon-wrapper">
                         {item.icon}
                       </div>
-                      <span style={{ fontWeight: '500', fontSize: '14px', letterSpacing: '0.3px' }}>
-                        {item.label}
-                      </span>
+                      <div className="d-flex flex-column">
+                        <span className="fw-semibold" style={{ fontSize: '14px' }}>{item.label}</span>
+                        <span style={{ fontSize: '11px', opacity: 0.6 }}>{item.description}</span>
+                      </div>
                     </div>
-                    <span style={{
-                      fontSize: '18px',
-                      transition: 'transform 0.3s ease',
-                      transform: openMenus[item.path] ? 'rotate(180deg)' : 'rotate(0deg)',
+                    <span style={{ 
+                      transform: openMenus[item.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.4s',
+                      opacity: 0.7
                     }}>
-                      {openMenus[item.path] ? <MdExpandLess /> : <MdExpandMore />}
+                      {openMenus[item.id] ? <MdExpandLess size={20} /> : <MdExpandMore size={20} />}
                     </span>
                   </div>
 
-                  {openMenus[item.path] && (
-                    <div style={{ overflow: 'hidden', paddingRight: '8px' }}>
+                  {openMenus[item.id] && (
+                    <div className="submenu-container mt-1 mb-2">
                       {item.submenu.map((subItem, subIndex) => (
                         <Link
                           key={subItem.path}
                           to={subItem.path}
-                          className={`submenu-item ${location.pathname === subItem.path ? 'submenu-item-active' : ''}`}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'white',
-                            textDecoration: 'none',
-                            fontSize: '13px',
-                            fontWeight: '400',
-                            animation: `fadeInUp 0.3s ease ${subIndex * 0.05}s backwards`,
-                          }}
+                          className={`submenu-item text-decoration-none ${location.pathname === subItem.path ? 'submenu-item-active' : ''}`}
                           onClick={handleLinkClick}
-                          onMouseEnter={(e) => {
-                            if (!isMobile && location.pathname !== subItem.path) {
-                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isMobile && location.pathname !== subItem.path) {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }
-                          }}
+                          style={{ animation: `slideIn 0.2s ease ${subIndex * 0.03}s backwards` }}
                         >
-                          <span style={{ fontSize: '14px', marginRight: '10px', opacity: 0.8 }}>
+                          <span style={{ marginRight: '14px', fontSize: '16px', opacity: 0.9 }}>
                             {subItem.icon}
                           </span>
-                          <span>{subItem.label}</span>
+                          <div className="d-flex flex-column">
+                            <span style={{ fontSize: '13px', fontWeight: '500' }}>{subItem.label}</span>
+                            <span style={{ fontSize: '10px', opacity: 0.6 }}>{subItem.description}</span>
+                          </div>
                         </Link>
                       ))}
                     </div>
@@ -399,129 +382,65 @@ const Sidebar = ({ isOpen, onLogout, isMobile, onClose }) => {
               ) : (
                 <Link
                   to={item.path}
-                  className={`menu-item-premium ${location.pathname === item.path ? 'menu-item-active' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    paddingLeft: '16px',
-                    paddingRight: '16px',
-                    paddingTop: '12px',
-                    paddingBottom: '12px',
-                    color: 'white',
-                    textDecoration: 'none',
-                    marginBottom: '4px',
-                    ...(location.pathname === item.path ? {
-                      background: 'linear-gradient(90deg, rgba(64, 224, 208, 0.3), transparent)',
-                      borderLeft: '4px solid #40E0D0',
-                      paddingLeft: '12px',
-                    } : {}),
-                  }}
+                  className={`menu-item-ultra text-decoration-none d-flex align-items-center gap-3 ${location.pathname === item.path ? 'menu-item-active' : ''}`}
                   onClick={handleLinkClick}
-                  onMouseEnter={(e) => {
-                    if (!isMobile && location.pathname !== item.path) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isMobile && location.pathname !== item.path) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
                 >
-                  <div className="icon-wrapper" style={{ fontSize: '18px', marginRight: '12px' }}>
+                  <div className="icon-wrapper">
                     {item.icon}
                   </div>
-                  <span style={{ fontWeight: '500', fontSize: '14px', letterSpacing: '0.3px' }}>
-                    {item.label}
-                  </span>
+                  <div className="d-flex flex-column">
+                    <span className="fw-semibold" style={{ fontSize: '14px' }}>{item.label}</span>
+                    {item.description && (
+                      <span style={{ fontSize: '11px', opacity: 0.6 }}>{item.description}</span>
+                    )}
+                  </div>
                 </Link>
               )}
             </div>
           ))}
+
+          {/* Divider */}
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '20px 16px' }} />
 
           {/* Bottom Menu Items */}
           {bottomMenuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className="menu-item-premium"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                paddingLeft: '16px',
-                paddingRight: '16px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                color: 'white',
-                textDecoration: 'none',
-                marginBottom: '4px',
-                marginTop: '12px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
+              className="menu-item-ultra text-decoration-none d-flex align-items-center gap-3"
               onClick={handleLinkClick}
-              onMouseEnter={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
             >
-              <div className="icon-wrapper" style={{ fontSize: '18px', marginRight: '12px' }}>
+              <div className="icon-wrapper">
                 {item.icon}
               </div>
-              <span style={{ fontWeight: '500', fontSize: '14px', letterSpacing: '0.3px' }}>
-                {item.label}
-              </span>
+              <div className="d-flex flex-column">
+                <span className="fw-semibold" style={{ fontSize: '14px' }}>{item.label}</span>
+                <span style={{ fontSize: '11px', opacity: 0.6 }}>{item.description}</span>
+              </div>
             </Link>
           ))}
 
-          {/* Logout Button */}
+          {/* Ultra Premium Logout */}
           <div
-            className="logout-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-              paddingTop: '12px',
-              paddingBottom: '12px',
-              color: 'white',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              marginTop: '8px',
-            }}
+            className="logout-btn-premium d-flex align-items-center gap-3"
             onClick={handleLogout}
-            onMouseEnter={(e) => {
-              if (!isMobile) {
-                e.currentTarget.style.background = 'rgba(255, 59, 48, 0.2)';
-                e.currentTarget.style.borderLeft = '4px solid #ff6b5b';
-                e.currentTarget.style.paddingLeft = '12px';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isMobile) {
-                e.currentTarget.style.background = 'rgba(255, 59, 48, 0.1)';
-                e.currentTarget.style.borderLeft = '4px solid transparent';
-                e.currentTarget.style.paddingLeft = '16px';
-              }
-            }}
+            style={{ cursor: 'pointer' }}
           >
-            <div className="icon-wrapper" style={{
-              fontSize: '18px',
-              marginRight: '12px',
-              background: 'rgba(255, 59, 48, 0.2)',
-              color: '#ff6b5b',
-            }}>
-              <MdLogout />
+            <div className="icon-wrapper" style={{ background: 'rgba(255,77,109,0.1)', color: '#ff8a8a' }}>
+              <MdLogout size={20} />
             </div>
-            <span style={{ fontWeight: '600', fontSize: '14px', letterSpacing: '0.3px', color: '#ff6b5b' }}>
-              Logout
-            </span>
+            <div className="d-flex flex-column">
+              <span className="fw-bold" style={{ color: '#ffb3b3', fontSize: '14px' }}>Logout</span>
+              <span style={{ fontSize: '11px', opacity: 0.6, color: 'rgba(255,179,179,0.7)' }}>End session</span>
+            </div>
           </div>
+        </div>
+
+        {/* Premium Footer */}
+        <div className="p-3 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+            SYSTEM · SECURE
+          </span>
         </div>
       </div>
     </>
