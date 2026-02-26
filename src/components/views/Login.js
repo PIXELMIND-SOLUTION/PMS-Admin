@@ -182,7 +182,7 @@ const Login = ({ onLogin }) => {
             <h1 className="text-white text-2xl font-bold tracking-tight mb-1">
               Admin
             </h1>
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-white">
               Sign in to manage your projects
             </p>
           </div>
@@ -201,7 +201,7 @@ const Login = ({ onLogin }) => {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-[10px] font-semibold uppercase tracking-widest text-white/55 ml-1"
+                className="text-[10px] font-semibold uppercase tracking-widest text-white ml-1"
               >
                 Email Address
               </label>
@@ -237,7 +237,7 @@ const Login = ({ onLogin }) => {
                   onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
                   className="w-4 h-4 cursor-pointer rounded border-white/30 bg-white/10 checked:bg-[#00e5cc] checked:border-[#00e5cc] focus:ring-0 focus:ring-offset-0 transition-colors duration-200"
                 />
-                <span className="group-hover:text-white/70 transition-colors duration-200">Remember me</span>
+                <span className="group-hover:text-white transition-colors duration-200">Remember me</span>
               </label>
             </div>
 
@@ -263,7 +263,7 @@ const Login = ({ onLogin }) => {
             {/* Support */}
             <p className="text-center text-xs mt-2 text-white/40">
               Don't have an account?{' '}
-              <a href="#" className="text-[#00e5cc] font-semibold hover:text-[#00e5cc]/80 hover:underline transition-all duration-200">
+              <a href="#" className="text-[#fff] font-semibold hover:text-[#00e5cc]/80 hover:underline transition-all duration-200">
                 Contact support
               </a>
             </p>
