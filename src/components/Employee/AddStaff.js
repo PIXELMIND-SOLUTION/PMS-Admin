@@ -14,7 +14,14 @@ import {
   CreditCard,
   Shield,
   ChevronDown,
+  CheckCircle,
+  AlertCircle,
+  Loader,
 } from "lucide-react";
+
+const API_URL = "https://pms-backend-t3ox.onrender.com/api/staff";
+const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
+const AUTH_TOKEN = adminDetails?.token;
 
 const AddStaff = () => {
   const navigate = useNavigate();
@@ -31,10 +38,9 @@ const AddStaff = () => {
   });
 
   const [profilePreview, setProfilePreview] = useState(null);
-  const [idPreview, setIdPreview] = useState(null);
-
-  const [profileImage, setProfileImage] = useState(null);
-  const [idCardImage, setIdCardImage] = useState(null);
+  const [idPreview, setIdPreview]             = useState(null);
+  const [profileImage, setProfileImage]       = useState(null);
+  const [idCardImage, setIdCardImage]         = useState(null);
 
   const [documents, setDocuments] = useState({
     experienceLetters: [],
@@ -48,20 +54,20 @@ const AddStaff = () => {
     graduation: [],
   });
 
-  const roles = [
-    "CEO",
-    "HR",
-    "Backend Developer",
-    "Frontend Developer",
-    "Full Stack Developer",
-    "Project Manager",
-    "Designer",
-    "QA Engineer",
-    "DevOps Engineer",
-    "Team Lead",
-  ];
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast]     = useState(null);
 
-  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const roles = [
+    "CEO","HR","Backend Developer","Frontend Developer",
+    "Full Stack Developer","Project Manager","Designer",
+    "QA Engineer","DevOps Engineer","Team Lead",
+  ];
+  const bloodGroups = ["A+","A-","B+","B-","AB+","AB-","O+","O-"];
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,9 +75,7 @@ const AddStaff = () => {
   const handleImageUpload = (e, setter, previewSetter) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setter(file);
-
     const reader = new FileReader();
     reader.onload = () => previewSetter(reader.result);
     reader.readAsDataURL(file);
@@ -79,194 +83,272 @@ const AddStaff = () => {
 
   const handleDocs = (e, key) => {
     const files = Array.from(e.target.files);
-
-    setDocuments((prev) => ({
-      ...prev,
-      [key]: [...prev[key], ...files],
-    }));
+    setDocuments((prev) => ({ ...prev, [key]: [...prev[key], ...files] }));
   };
 
-  const removeDoc = (key, index) => {
+  const removeDoc = (key, index) =>
     setDocuments((prev) => ({
       ...prev,
       [key]: prev[key].filter((_, i) => i !== index),
     }));
-  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.employeeId.trim())                        { showToast("error","Employee ID is required."); return; }
+    if (!formData.employeeName.trim())                      { showToast("error","Employee name is required."); return; }
+    if (!formData.role)                                     { showToast("error","Please select a role."); return; }
+    if (!formData.mobile.trim() || formData.mobile.length < 10) { showToast("error","Please enter a valid 10-digit mobile number."); return; }
+    if (!formData.email.trim())                             { showToast("error","Email is required."); return; }
 
-    const payload = {
-      ...formData,
-      profileImage,
-      idCardImage,
-      documents,
-    };
+    setLoading(true);
+    try {
+      const payload = {
+        employeeId:   formData.employeeId.trim(),
+        employeeName: formData.employeeName.trim(),
+        role:         formData.role,
+        mobile:       formData.mobile.trim(),
+        email:        formData.email.trim(),
+        joiningDate:  formData.joiningDate || new Date().toISOString(),
+        bloodGroup:   formData.bloodGroup  || "O+",
+        password:     formData.password    || "Staff@123",
+      };
 
-    console.log("EMPLOYEE DATA:", payload);
-    alert("Employee Added Successfully (Local Only)");
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json();
+
+      if (response.ok && json.success !== false) {
+        showToast("success","Employee added successfully!");
+        setTimeout(() => navigate("/staff"), 1800);
+      } else {
+        const errMsg = json.errors
+          ? json.errors.join(", ")
+          : json.message || json.error || "Failed to add employee. Please try again.";
+        showToast("error", errMsg);
+      }
+    } catch {
+      showToast("error","Network error. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ─────────────────────────── RENDER ─────────────────────────── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50/90 via-white to-teal-100/80 p-4 md:p-8 lg:p-12">
-      {/* Premium Global Styles */}
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/90 via-white to-teal-100/80">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        
+        *, *::before, *::after { font-family:'Inter',-apple-system,sans-serif; box-sizing:border-box; }
+
         .glass-card {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(255,255,255,0.93);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(64, 224, 208, 0.3);
-          box-shadow: 0 20px 40px -12px rgba(0, 128, 128, 0.25);
+          border: 1px solid rgba(64,224,208,0.22);
+          box-shadow: 0 12px 40px -8px rgba(0,128,128,0.18);
         }
-        
-        .input-premium {
-          background: rgba(255, 255, 255, 0.9);
-          border: 1.5px solid rgba(0, 128, 128, 0.15);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .inp {
+          width:100%;
+          background:#fff;
+          border:1.5px solid rgba(0,128,128,0.15);
+          transition: border-color .25s, box-shadow .25s;
         }
-        
-        .input-premium:focus {
-          border-color: #008080;
-          box-shadow: 0 0 0 4px rgba(0, 128, 128, 0.1);
-          background: white;
+        .inp:focus {
+          border-color:#0d9488;
+          box-shadow:0 0 0 3px rgba(13,148,136,0.12);
+          outline:none;
         }
-        
-        .upload-area {
-          background: linear-gradient(145deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
-          backdrop-filter: blur(8px);
-          border: 2px dashed rgba(0, 128, 128, 0.3);
-          transition: all 0.4s ease;
+
+        .upload-zone {
+          background: linear-gradient(145deg,rgba(255,255,255,0.55),rgba(240,253,250,0.35));
+          border: 2px dashed rgba(0,128,128,0.25);
+          transition: border-color .3s, background .3s, transform .3s;
         }
-        
-        .upload-area:hover {
-          border-color: #008080;
-          background: rgba(64, 224, 208, 0.08);
-          transform: translateY(-2px);
+        .upload-zone:hover {
+          border-color:#0d9488;
+          background:rgba(20,184,166,0.06);
+          transform:translateY(-2px);
         }
-        
-        .badge-premium {
-          background: linear-gradient(145deg, #008080, #006666);
-          color: white;
-          padding: 2px 12px;
-          border-radius: 100px;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          box-shadow: 0 4px 10px rgba(0,128,128,0.2);
+
+        .doc-card {
+          background:rgba(255,255,255,0.88);
+          border:1px solid rgba(20,184,166,0.18);
+          box-shadow:0 2px 10px rgba(0,128,128,0.07);
+          transition: box-shadow .25s, border-color .25s, transform .25s;
+        }
+        .doc-card:hover {
+          border-color:rgba(20,184,166,0.45);
+          box-shadow:0 6px 22px rgba(0,128,128,0.13);
+          transform:translateY(-2px);
+        }
+
+        .badge-teal {
+          background:linear-gradient(135deg,#0d9488,#0f766e);
+          color:#fff;
+          padding:3px 12px;
+          border-radius:100px;
+          font-size:11px;
+          font-weight:700;
+          letter-spacing:.5px;
+        }
+
+        @keyframes slideDown {
+          from { opacity:0; transform:translateY(-14px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .toast-in { animation:slideDown .3s ease forwards; }
+
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .spin { animation:spin .8s linear infinite; }
+
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(10px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .fade-up { animation:fadeUp .4s ease forwards; }
+
+        /* ── divider ── */
+        .section-divider {
+          display:flex; align-items:center; gap:12px;
+          margin-bottom:1.25rem;
+        }
+        .section-divider::before, .section-divider::after {
+          content:''; flex:1; height:1px;
+          background:linear-gradient(to right,transparent,rgba(20,184,166,.35),transparent);
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Ultra Premium Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 lg:mb-12 gap-6">
-          <div className="relative">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-xl shadow-teal-500/30">
-                <User className="text-white" size={24} />
-              </div>
-              <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-gray-800 tracking-tight">
-                  Add New Employee
-                </h1>
-                <p className="text-gray-500 mt-1 lg:mt-2 text-sm lg:text-base">
-                  Create employee profile with secure document storage
-                </p>
-              </div>
-            </div>
-            <div className="absolute -top-2 -left-2 w-24 h-24 bg-teal-400 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-pulse" />
-          </div>
+      {/* ── TOAST ── */}
+      {toast && (
+        <div className={`toast-in fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-4 rounded-2xl shadow-2xl font-semibold text-sm max-w-[calc(100vw-2rem)] sm:max-w-sm ${
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        }`}>
+          {toast.type === "success"
+            ? <CheckCircle size={18} className="shrink-0" />
+            : <AlertCircle size={18} className="shrink-0" />}
+          <span className="flex-1 text-xs sm:text-sm leading-snug">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-80 hover:opacity-100 shrink-0 ml-1">
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
+      <div className="w-full max-w-5xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
+
+        {/* ── HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-8 fade-up">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30 shrink-0">
+              <User className="text-white" size={18} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 tracking-tight truncate">
+                Add New Employee
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                Create profile with secure document storage
+              </p>
+            </div>
+          </div>
           <button
             onClick={() => navigate("/staff")}
-            className="group flex items-center justify-center gap-2 px-6 py-3 lg:px-8 lg:py-4 rounded-xl bg-white shadow-lg hover:shadow-2xl border border-teal-100 transition-all duration-300 hover:scale-105"
+            className="group flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-white shadow-md hover:shadow-lg border border-teal-100 hover:border-teal-300 transition-all hover:scale-[1.02] text-sm font-semibold text-teal-700 w-full sm:w-auto shrink-0"
           >
-            <ArrowLeft size={20} className="text-teal-600 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-semibold text-teal-600">Back to Staff</span>
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            Back to Staff
           </button>
         </div>
 
-        {/* Main Premium Card */}
-        <div className="glass-card rounded-3xl lg:rounded-4xl p-6 lg:p-10 xl:p-12">
-          
-          {/* Image Upload Grid - Ultra Responsive */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12 lg:mb-16">
-            <ImageUpload
-              title="Employee Profile Image"
-              preview={profilePreview}
-              icon={<User size={34} />}
-              onChange={(e) =>
-                handleImageUpload(e, setProfileImage, setProfilePreview)
-              }
-            />
+        {/* ── MAIN CARD ── */}
+        <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 fade-up">
 
+          {/* ── IMAGE UPLOADS ── */}
+          <div className="section-divider">
+            <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
+              Photos
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <ImageUpload
-              title="Employee ID Card"
+              title="Profile Photo"
+              preview={profilePreview}
+              icon={<User size={30} className="text-teal-400" />}
+              onChange={(e) => handleImageUpload(e, setProfileImage, setProfilePreview)}
+            />
+            <ImageUpload
+              title="ID Card Image"
               preview={idPreview}
-              icon={<CreditCard size={34} />}
-              onChange={(e) =>
-                handleImageUpload(e, setIdCardImage, setIdPreview)
-              }
+              icon={<CreditCard size={30} className="text-teal-400" />}
+              onChange={(e) => handleImageUpload(e, setIdCardImage, setIdPreview)}
             />
           </div>
 
-          {/* Form Grid */}
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
-          >
-            <Input label="Employee ID" icon={<User size={18} />} name="employeeId" onChange={handleChange} required />
-            <Input label="Employee Name" icon={<User size={18} />} name="employeeName" onChange={handleChange} required />
-            <Select label="Role" icon={<Briefcase size={18} />} options={roles} name="role" onChange={handleChange} required />
-            <Input label="Mobile" icon={<Phone size={18} />} name="mobile" onChange={handleChange} required />
-            <Input label="Email" icon={<Mail size={18} />} name="email" onChange={handleChange} type="email" required />
-            <Input type="date" label="Joining Date" icon={<Calendar size={18} />} name="joiningDate" onChange={handleChange} required />
-            <Select label="Blood Group" icon={<Droplet size={18} />} options={bloodGroups} name="bloodGroup" onChange={handleChange} />
-            <Input type="password" label="Password" icon={<Lock size={18} />} name="password" onChange={handleChange} required />
-
-            {/* Document Section - Full Width */}
-            <div className="md:col-span-2 mt-6 lg:mt-8">
-              <div className="flex items-center gap-3 mb-6 lg:mb-8">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                  <Shield className="text-teal-600" size={22} />
-                </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-800">
-                  Employee Documents
-                </h2>
-                <span className="badge-premium ml-2">Secure Vault</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Object.keys(documents).map((key) => (
-                  <DocUpload
-                    key={key}
-                    title={formatTitle(key)}
-                    files={documents[key]}
-                    onChange={(e) => handleDocs(e, key)}
-                    remove={(i) => removeDoc(key, i)}
-                  />
-                ))}
-              </div>
+          {/* ── FORM ── */}
+          <form onSubmit={handleSubmit}>
+            <div className="section-divider">
+              <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
+                Employee Details
+              </span>
             </div>
 
-            {/* Submit Button */}
-            <div className="md:col-span-2 mt-8 lg:mt-12">
-              <button
-                type="submit"
-                className="group relative w-full py-4 lg:py-5 px-8 rounded-xl bg-gradient-to-r from-teal-600 via-teal-500 to-teal-600 text-white text-lg lg:text-xl font-bold shadow-xl shadow-teal-500/30 hover:shadow-2xl hover:shadow-teal-500/40 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-3">
-                  <User size={22} />
-                  Add Employee to Directory
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-teal-400 via-teal-300 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 lg:gap-5 mb-6 sm:mb-8">
+              <FInput label="Employee ID"   icon={<User size={14}/>} name="employeeId"   value={formData.employeeId}   onChange={handleChange} placeholder="e.g. PMS22022513" required />
+              <FInput label="Employee Name" icon={<User size={14}/>} name="employeeName" value={formData.employeeName} onChange={handleChange} placeholder="e.g. Ravi Kumar"   required />
+              <FSelect label="Role"         icon={<Briefcase size={14}/>} name="role"     value={formData.role}         onChange={handleChange} options={roles}       required />
+              <FInput  label="Mobile"       icon={<Phone size={14}/>}     name="mobile"   value={formData.mobile}       onChange={handleChange} placeholder="10-digit number" maxLength={10} required />
+              <FInput  label="Email"        icon={<Mail size={14}/>}      name="email"    value={formData.email}        onChange={handleChange} type="email" placeholder="e.g. ravi@gmail.com" required />
+              <FInput  label="Joining Date" icon={<Calendar size={14}/>}  name="joiningDate" value={formData.joiningDate} onChange={handleChange} type="date" required />
+              <FSelect label="Blood Group"  icon={<Droplet size={14}/>}   name="bloodGroup"  value={formData.bloodGroup}  onChange={handleChange} options={bloodGroups} />
+              <FInput  label="Password"     icon={<Lock size={14}/>}      name="password" value={formData.password}     onChange={handleChange} type="password" placeholder="Min 6 chars" required />
             </div>
+
+            {/* ── DOCUMENTS ── */}
+            <div className="section-divider">
+              <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
+                Documents
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
+                <Shield className="text-teal-600" size={15} />
+              </div>
+              <h2 className="text-sm sm:text-base font-bold text-gray-800">Employee Documents</h2>
+              <span className="badge-teal hidden sm:inline">Secure Vault</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              {Object.keys(documents).map((key) => (
+                <DocUpload
+                  key={key}
+                  title={formatTitle(key)}
+                  files={documents[key]}
+                  onChange={(e) => handleDocs(e, key)}
+                  remove={(i) => removeDoc(key, i)}
+                />
+              ))}
+            </div>
+
+            {/* ── SUBMIT ── */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 sm:py-4 px-6 rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/35 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {loading ? (
+                <><Loader size={18} className="spin" />Adding Employee…</>
+              ) : (
+                <><User size={18} />Add Employee to Directory</>
+              )}
+            </button>
           </form>
         </div>
       </div>
@@ -274,35 +356,31 @@ const AddStaff = () => {
   );
 };
 
-/* ========== ULTRA PREMIUM IMAGE UPLOAD ========== */
+/* ──────────────────────── SUB-COMPONENTS ──────────────────────── */
+
 const ImageUpload = ({ title, preview, onChange, icon }) => (
-  <div className="relative">
-    <p className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span className="w-2 h-2 rounded-full bg-teal-500" />
+  <div>
+    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block shrink-0" />
       {title}
     </p>
-
     <label className="cursor-pointer block">
-      <div
-        className={`
-          relative h-56 lg:h-64 rounded-2xl overflow-hidden
-          upload-area flex items-center justify-center
-          ${preview ? 'border-solid border-teal-500' : 'border-dashed'}
-        `}
-      >
+      <div className={`upload-zone relative h-40 sm:h-48 lg:h-52 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center ${
+        preview ? "border-solid !border-teal-400" : ""
+      }`}>
         {preview ? (
           <>
             <img src={preview} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-            <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-medium text-teal-700">
+            <span className="absolute bottom-2.5 left-2.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold text-teal-700">
               ✓ Uploaded
-            </div>
+            </span>
           </>
         ) : (
-          <div className="text-teal-500 text-center p-6">
-            <div className="mb-3 flex justify-center">{icon}</div>
-            <p className="text-sm font-medium text-gray-600">Click to upload</p>
-            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+          <div className="text-center px-4 py-6">
+            <div className="flex justify-center mb-2">{icon}</div>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Click to upload</p>
+            <p className="text-xs text-gray-400 mt-0.5">PNG, JPG up to 5MB</p>
           </div>
         )}
       </div>
@@ -311,46 +389,34 @@ const ImageUpload = ({ title, preview, onChange, icon }) => (
   </div>
 );
 
-/* ========== ULTRA PREMIUM DOC UPLOAD ========== */
 const DocUpload = ({ title, files, onChange, remove }) => (
-  <div className="group bg-white/80 backdrop-blur-sm p-5 lg:p-6 rounded-2xl border border-teal-100/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-teal-300">
-    <p className="font-semibold text-gray-700 mb-3 flex items-center justify-between">
-      <span className="flex items-center gap-2">
-        <File size={16} className="text-teal-600" />
-        {title}
+  <div className="doc-card rounded-xl p-3.5 sm:p-4">
+    <div className="flex items-center justify-between mb-2.5 gap-2">
+      <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-700 truncate">
+        <File size={13} className="text-teal-500 shrink-0" />
+        <span className="truncate">{title}</span>
       </span>
       {files.length > 0 && (
-        <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-bold">
+        <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-bold shrink-0">
           {files.length}
         </span>
       )}
-    </p>
-
+    </div>
     <label className="cursor-pointer block">
-      <div className="border-2 border-dashed border-teal-200/70 rounded-xl h-24 lg:h-28 flex flex-col items-center justify-center gap-1 group-hover:border-teal-500 group-hover:bg-teal-50/50 transition-all duration-300">
-        <File className="text-teal-400 group-hover:text-teal-600" size={24} />
-        <span className="text-xs font-medium text-gray-500 group-hover:text-teal-600">
-          Upload Files
-        </span>
+      <div className="border-2 border-dashed border-teal-200/60 rounded-lg h-16 sm:h-20 flex flex-col items-center justify-center gap-1 hover:border-teal-400 hover:bg-teal-50/50 transition-all">
+        <File className="text-teal-300" size={18} />
+        <span className="text-xs text-gray-400 font-medium">Upload Files</span>
       </div>
       <input multiple type="file" className="hidden" onChange={onChange} />
     </label>
-
     {files.length > 0 && (
-      <div className="mt-4 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-teal-200">
+      <div className="mt-2.5 space-y-1.5 max-h-24 overflow-y-auto">
         {files.map((file, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between bg-gray-50/80 backdrop-blur px-3 py-2 rounded-lg mb-2 group/file"
-          >
-            <span className="text-xs truncate max-w-[140px] lg:max-w-[180px] font-medium text-gray-700">
-              {file.name}
-            </span>
-            <X
-              size={16}
-              className="cursor-pointer text-red-400 hover:text-red-600 transition-colors"
-              onClick={() => remove(i)}
-            />
+          <div key={i} className="flex items-center justify-between bg-gray-50 px-2.5 py-1.5 rounded-lg gap-2">
+            <span className="text-xs truncate text-gray-600 font-medium flex-1">{file.name}</span>
+            <button type="button" onClick={() => remove(i)} className="shrink-0">
+              <X size={13} className="text-red-400 hover:text-red-600 transition-colors" />
+            </button>
           </div>
         ))}
       </div>
@@ -358,73 +424,45 @@ const DocUpload = ({ title, files, onChange, remove }) => (
   </div>
 );
 
-/* ========== ULTRA PREMIUM INPUT ========== */
-const Input = ({ label, icon, className = "", ...props }) => (
-  <div className="relative">
-    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">
-      {label}
-    </label>
+const FInput = ({ label, icon, className = "", ...props }) => (
+  <div>
+    <label className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-1.5 block">{label}</label>
     <div className="relative">
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-        {icon}
-      </span>
+      {icon && (
+        <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          {icon}
+        </span>
+      )}
       <input
         {...props}
-        className={`
-          w-full h-[52px] lg:h-[56px]
-          pl-11 pr-4
-          input-premium
-          rounded-xl
-          focus:outline-none
-          bg-white
-          text-gray-700
-          placeholder:text-gray-400
-          ${className}
-        `}
+        className={`inp h-10 sm:h-11 ${icon ? "pl-9 sm:pl-10" : "pl-3.5"} pr-3.5 rounded-lg sm:rounded-xl text-sm text-gray-700 placeholder:text-gray-400 ${className}`}
       />
     </div>
   </div>
 );
 
-/* ========== ULTRA PREMIUM SELECT ========== */
-const Select = ({ label, icon, options, className = "", ...props }) => (
-  <div className="relative">
-    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">
-      {label}
-    </label>
+const FSelect = ({ label, icon, options, className = "", ...props }) => (
+  <div>
+    <label className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-1.5 block">{label}</label>
     <div className="relative">
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
-        {icon}
-      </span>
+      {icon && (
+        <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          {icon}
+        </span>
+      )}
       <select
         {...props}
-        className={`
-          w-full h-[52px] lg:h-[56px]
-          pl-11 pr-10
-          input-premium
-          rounded-xl
-          focus:outline-none
-          bg-white
-          text-gray-700
-          appearance-none
-          cursor-pointer
-          ${className}
-        `}
+        className={`inp h-10 sm:h-11 ${icon ? "pl-9 sm:pl-10" : "pl-3.5"} pr-8 rounded-lg sm:rounded-xl text-sm text-gray-700 appearance-none cursor-pointer ${className}`}
       >
         <option value="">Select {label}</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
     </div>
   </div>
 );
 
 const formatTitle = (key) =>
-  key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (s) => s.toUpperCase())
-    .replace(/([a-z])([A-Z])/g, "$1 $2");
+  key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
 
 export default AddStaff;

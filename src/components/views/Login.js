@@ -18,13 +18,12 @@ const Login = ({ onLogin }) => {
   };
 
   const handleOtpChange = (index, value) => {
-    if (value.length > 1) return; // Prevent multiple digits
-    
+    if (value.length > 1) return;
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -32,7 +31,6 @@ const Login = ({ onLogin }) => {
   };
 
   const handleOtpKeyDown = (index, e) => {
-    // Handle backspace
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       const prevInput = document.getElementById(`otp-${index - 1}`);
       if (prevInput) prevInput.focus();
@@ -43,17 +41,32 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setError('');
     if (!formData.email) return;
-    
+
     setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await fetch('https://pms-backend-t3ox.onrender.com/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send OTP. Please try again.');
+      }
+
       setShowOtpModal(true);
-      // Auto-focus first OTP input after modal opens
       setTimeout(() => {
         document.getElementById('otp-0')?.focus();
       }, 100);
-    }, 1500);
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpSubmit = async (e) => {
@@ -66,40 +79,69 @@ const Login = ({ onLogin }) => {
 
     setOtpLoading(true);
     setOtpError('');
-    
-    // Simulate verification delay
-    setTimeout(() => {
-      // Static OTP verification - accept any 6-digit code for demo
-      if (otpString.length === 6) {
-        sessionStorage.setItem(
-          'adminDetails',
-          JSON.stringify({
-            email: formData.email,
-            adminId: 'admin_' + Math.random().toString(36).substr(2, 9),
-            adminName: formData.email.split('@')[0],
-          })
-        );
-        onLogin();
-        navigate('/dashboard');
-      } else {
-        setOtpError('Invalid OTP. Please try again.');
+
+    try {
+      const response = await fetch('https://pms-backend-t3ox.onrender.com/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email, otp: otpString }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid OTP. Please try again.');
       }
+
+      sessionStorage.setItem(
+        'adminDetails',
+        JSON.stringify({
+          email: data.data.email,
+          adminId: data.data.id || null,
+          adminName: data.data.name || null,
+          token: data.data.token || null,
+        })
+      );
+
+      onLogin();
+      navigate('/dashboard');
+    } catch (err) {
+      setOtpError(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setOtpLoading(false);
-    }, 1500);
+    }
   };
 
   const handleResendOtp = async () => {
     setOtpLoading(true);
     setOtpError('');
-    
-    // Simulate resend delay
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to resend OTP. Please try again.');
+      }
+
       setOtp(['', '', '', '', '', '']);
-      setOtpError('');
+      setTimeout(() => {
+        document.getElementById('otp-0')?.focus();
+      }, 100);
+    } catch (err) {
+      setOtpError(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setOtpLoading(false);
-      // Focus first input
-      document.getElementById('otp-0')?.focus();
-    }, 1500);
+    }
   };
 
   return (
@@ -179,12 +221,8 @@ const Login = ({ onLogin }) => {
 
           {/* Heading */}
           <div className="text-center mb-6">
-            <h1 className="text-white text-2xl font-bold tracking-tight mb-1">
-              Admin
-            </h1>
-            <p className="text-xs text-white">
-              Sign in to manage your projects
-            </p>
+            <h1 className="text-white text-2xl font-bold tracking-tight mb-1">Admin</h1>
+            <p className="text-xs text-white">Sign in to manage your projects</p>
           </div>
 
           {/* Error */}
@@ -208,9 +246,8 @@ const Login = ({ onLogin }) => {
               <div className="relative flex items-center">
                 <div className="absolute left-4 flex items-center pointer-events-none">
                   <MdEmail
-                    className={`text-lg transition-colors duration-300 ${
-                      focusedField === 'email' ? 'text-[#00e5cc]' : 'text-[#00e5cc]'
-                    }`}
+                    className={`text-lg transition-colors duration-300 ${focusedField === 'email' ? 'text-[#00e5cc]' : 'text-[#00e5cc]'
+                      }`}
                   />
                 </div>
                 <input
@@ -263,7 +300,10 @@ const Login = ({ onLogin }) => {
             {/* Support */}
             <p className="text-center text-xs mt-2 text-white/40">
               Don't have an account?{' '}
-              <a href="#" className="text-[#fff] font-semibold hover:text-[#00e5cc]/80 hover:underline transition-all duration-200">
+              <a
+                href="#"
+                className="text-[#fff] font-semibold hover:text-[#00e5cc]/80 hover:underline transition-all duration-200"
+              >
                 Contact support
               </a>
             </p>
@@ -301,11 +341,9 @@ const Login = ({ onLogin }) => {
               <div className="text-center mb-8">
                 <h3 className="text-white text-xl font-bold mb-2">Enter OTP</h3>
                 <p className="text-sm text-white/50">
-                  We've sent a 6-digit code to<br />
+                  We've sent a 6-digit code to
+                  <br />
                   <span className="text-[#00e5cc] font-medium">{formData.email}</span>
-                </p>
-                <p className="text-xs text-white/30 mt-2">
-                  (For demo, any 6-digit code works)
                 </p>
               </div>
 
@@ -340,14 +378,7 @@ const Login = ({ onLogin }) => {
 
                 {/* Resend and Verify buttons */}
                 <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={otpLoading}
-                    className="w-full py-3 text-sm font-medium text-[#00e5cc] bg-white/5 border border-[#00e5cc]/30 rounded-xl hover:bg-[#00e5cc]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {otpLoading ? 'Sending...' : 'Resend OTP'}
-                  </button>
+
 
                   <button
                     type="submit"
@@ -358,13 +389,26 @@ const Login = ({ onLogin }) => {
                       <span className="flex items-center justify-center gap-2">
                         <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                           <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                          <path
+                            d="M12 2a10 10 0 0 1 10 10"
+                            stroke="white"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
                         </svg>
                         Verifying...
                       </span>
                     ) : (
                       'Verify & Sign In'
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={otpLoading}
+                    className="w-full py-3 text-sm font-medium text-[#00e5cc] bg-white/5 border border-[#00e5cc]/30 rounded-xl hover:bg-[#00e5cc]/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {otpLoading ? 'Sending...' : 'Resend OTP'}
                   </button>
                 </div>
               </form>

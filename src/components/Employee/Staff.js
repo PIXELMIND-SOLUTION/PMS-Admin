@@ -6,12 +6,8 @@ import {
   FaFilter,
   FaIdCard,
   FaFileAlt,
-  FaRegBuilding,
   FaUsersCog,
   FaUserCheck,
-  FaUserClock,
-  FaDownload,
-  FaEllipsisV,
 } from "react-icons/fa";
 import {
   MdEdit,
@@ -20,94 +16,57 @@ import {
   MdEmail,
   MdPhone,
   MdCalendarToday,
-  MdBloodtype,
   MdMoreVert,
   MdAdd,
   MdRefresh,
+  MdTableRows,
+  MdGridView,
 } from "react-icons/md";
-import { IoMdStats } from "react-icons/io";
+
+const API_URL = "https://pms-backend-t3ox.onrender.com/api/staff";
+const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
+const AUTH_TOKEN = adminDetails?.token;
 
 const Staff = () => {
   const navigate = useNavigate();
 
-  /* ------------------ PREMIUM LOCAL DATA ------------------ */
-  const [staffList, setStaffList] = useState([
-    {
-      id: "1",
-      employeeId: "EMP001",
-      employeeName: "Manoj Kumar",
-      role: "Designer",
-      mobile: "9876543210",
-      email: "manoj@example.com",
-      joiningDate: "2022-03-12",
-      bloodGroup: "B+",
-      isActive: true,
-      profileImage: "",
-      lastActive: "2025-02-11",
-    },
-    {
-      id: "2",
-      employeeId: "EMP002",
-      employeeName: "Vijay Nimmakayala",
-      role: "Frontend Developer",
-      mobile: "9876543211",
-      email: "vijay@example.com",
-      joiningDate: "2022-03-12",
-      bloodGroup: "B+",
-      isActive: true,
-      profileImage: "",
-      lastActive: "2025-02-12",
-    },
-    {
-      id: "3",
-      employeeId: "EMP003",
-      employeeName: "Priya Sharma",
-      role: "Backend Developer",
-      mobile: "9876543212",
-      email: "priya@example.com",
-      joiningDate: "2023-01-15",
-      bloodGroup: "O+",
-      isActive: true,
-      profileImage: "",
-      lastActive: "2025-02-12",
-    },
-    {
-      id: "4",
-      employeeId: "EMP004",
-      employeeName: "Rahul Mehta",
-      role: "Project Manager",
-      mobile: "9876543213",
-      email: "rahul@example.com",
-      joiningDate: "2021-11-20",
-      bloodGroup: "A+",
-      isActive: true,
-      profileImage: "",
-      lastActive: "2025-02-10",
-    },
-    {
-      id: "5",
-      employeeId: "EMP005",
-      employeeName: "Ananya Singh",
-      role: "QA Engineer",
-      mobile: "9876543214",
-      email: "ananya@example.com",
-      joiningDate: "2023-06-05",
-      bloodGroup: "AB-",
-      isActive: false,
-      profileImage: "",
-      lastActive: "2025-02-01",
-    },
-  ]);
-
+  const [staffList, setStaffList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [viewMode, setViewMode] = useState("table"); // table or card
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [viewMode, setViewMode] = useState("table");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  /* ------------------ STATS CALCULATION ------------------ */
+  const fetchStaff = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(API_URL, {
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const json = await response.json();
+      if (json.success && Array.isArray(json.data)) {
+        setStaffList(json.data);
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to fetch staff data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchStaff(); }, []);
+
   const stats = useMemo(() => {
     const total = staffList.length;
     const active = staffList.filter((s) => s.isActive).length;
@@ -116,345 +75,359 @@ const Staff = () => {
     return { total, active, inactive, uniqueRoles };
   }, [staffList]);
 
-  /* ------------------ FILTERS ------------------ */
   const filtered = useMemo(() => {
     return staffList.filter((s) => {
       const matchSearch =
-        s.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-        s.employeeId.toLowerCase().includes(search.toLowerCase()) ||
-        s.email.toLowerCase().includes(search.toLowerCase()) ||
-        s.role.toLowerCase().includes(search.toLowerCase());
-
+        s.employeeName?.toLowerCase().includes(search.toLowerCase()) ||
+        s.employeeId?.toLowerCase().includes(search.toLowerCase()) ||
+        s.email?.toLowerCase().includes(search.toLowerCase()) ||
+        s.role?.toLowerCase().includes(search.toLowerCase());
       const matchRole = roleFilter ? s.role === roleFilter : true;
       const matchStatus =
-        statusFilter === "" ? true : 
-        statusFilter === "active" ? s.isActive : 
-        statusFilter === "inactive" ? !s.isActive : true;
-
+        statusFilter === "" ? true
+        : statusFilter === "active" ? s.isActive
+        : !s.isActive;
       return matchSearch && matchRole && matchStatus;
     });
   }, [search, roleFilter, statusFilter, staffList]);
 
   const uniqueRoles = [...new Set(staffList.map((s) => s.role))];
-
-  /* ------------------ PAGINATION ------------------ */
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, roleFilter, statusFilter, itemsPerPage]);
+  useEffect(() => { setCurrentPage(1); }, [search, roleFilter, statusFilter, itemsPerPage]);
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this employee permanently?")) return;
-    setStaffList((prev) => prev.filter((s) => s.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      });
+      if (response.ok) {
+        setStaffList((prev) => prev.filter((s) => s._id !== id));
+      } else {
+        alert("Failed to delete employee.");
+      }
+    } catch {
+      setStaffList((prev) => prev.filter((s) => s._id !== id));
+    } finally {
+      setDeleteConfirm(null);
+    }
   };
 
-  /* ------------------ UI ------------------ */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50/80 p-4 md:p-6 lg:p-8 xl:p-10">
-      {/* Premium Global Styles */}
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50/80">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        
+        * { font-family: 'Inter', -apple-system, sans-serif; box-sizing: border-box; }
+
         .premium-card {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(255,255,255,0.92);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(64, 224, 208, 0.3);
-          box-shadow: 0 20px 40px -12px rgba(0, 128, 128, 0.15);
+          border: 1px solid rgba(20,184,166,0.18);
+          box-shadow: 0 4px 24px -4px rgba(0,128,128,0.10), 0 1px 4px rgba(0,0,0,0.04);
         }
-        
-        .premium-table {
-          border-collapse: separate;
-          border-spacing: 0 4px;
+        .stat-card {
+          background: rgba(255,255,255,0.95);
+          border: 1px solid rgba(20,184,166,0.15);
+          box-shadow: 0 2px 12px -2px rgba(0,128,128,0.08);
+          transition: all 0.25s ease;
         }
-        
-        .premium-table tr {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -4px rgba(0,128,128,0.15); }
+        .table-row-hover { transition: background 0.15s ease; }
+        .table-row-hover:hover td { background: rgba(240,253,250,0.9) !important; }
+        .status-pill {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 3px 9px; border-radius: 100px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+          white-space: nowrap;
         }
-        
-        .premium-table td {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(8px);
+        .btn-act {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 32px; height: 32px; border-radius: 8px;
+          transition: all 0.2s ease; cursor: pointer; border: none; flex-shrink: 0;
         }
-        
-        .premium-table tr:hover td {
-          background: white;
-          transform: scale(1.01);
-          box-shadow: 0 8px 20px rgba(0, 128, 128, 0.12);
-        }
-        
-        .status-badge {
-          padding: 4px 12px;
-          border-radius: 100px;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.3px;
-          text-transform: uppercase;
-        }
-        
-        .animated-gradient {
-          background: linear-gradient(-45deg, #008080, #20B2AA, #40E0D0, #008B8B);
-          background-size: 400% 400%;
-          animation: gradient 15s ease infinite;
-        }
-        
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        @media (max-width: 768px) {
-          .premium-card {
-            padding: 1rem;
-          }
-        }
+        .btn-act:hover { transform: scale(1.1); }
+        .s-input { outline: none !important; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .spinner { width:40px; height:40px; border:3px solid #e0f2f1; border-top:3px solid #0d9488; border-radius:50%; animation:spin 0.8s linear infinite; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation:fadeUp 0.3s ease forwards; }
+        .modal-back { position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px; }
+        .scroll-x::-webkit-scrollbar { height:4px; }
+        .scroll-x::-webkit-scrollbar-track { background:#f0fdf4; }
+        .scroll-x::-webkit-scrollbar-thumb { background:#99f6e4; border-radius:4px; }
+
+        /* Responsive column hiding */
+        @media(max-width:600px){ .h-sm{ display:none!important; } }
+        @media(max-width:420px){ .h-xs{ display:none!important; } }
       `}</style>
 
-      <div className="max-w-8xl mx-auto">
-        {/* ========== ULTRA PREMIUM HEADER ========== */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
-          <div className="relative">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl lg:rounded-3xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-2xl shadow-teal-500/40">
-                <FaUsersCog className="text-white text-2xl lg:text-3xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-800 tracking-tight">
-                  Staff Management
-                </h1>
-                <p className="text-gray-500 mt-1 lg:mt-2 text-sm lg:text-base flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-teal-500 rounded-full" />
-                  Manage employee records, roles & documents
-                </p>
-              </div>
+      {/* ── DELETE MODAL ── */}
+      {deleteConfirm && (
+        <div className="modal-back">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl fade-up">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
+              <MdDelete className="text-red-500" size={24} />
             </div>
-            <div className="absolute -top-4 -left-4 w-32 h-32 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+            <h3 className="text-base font-bold text-gray-800 text-center mb-1">Delete Employee?</h3>
+            <p className="text-xs text-gray-500 text-center mb-5">
+              Permanently remove <span className="font-semibold text-gray-700">{deleteConfirm.name}</span>?
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 text-sm">
+                Cancel
+              </button>
+              <button onClick={() => handleDelete(deleteConfirm.id)}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm">
+                Delete
+              </button>
+            </div>
           </div>
+        </div>
+      )}
 
-          <Link
-            to="/add-staff"
-            className="group relative flex items-center justify-center gap-3 px-6 py-3 lg:px-8 lg:py-4 rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 text-white font-semibold shadow-xl shadow-teal-500/40 hover:shadow-2xl hover:shadow-teal-500/60 transition-all duration-300 hover:scale-105 overflow-hidden"
-          >
-            <MdAdd size={22} className="group-hover:rotate-90 transition-transform duration-500" />
-            <span>Add Employee</span>
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+      <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
+
+        {/* ── HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30 shrink-0">
+              <FaUsersCog className="text-white" size={18} />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-800 tracking-tight leading-tight">
+                Staff Management
+              </h1>
+              <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 bg-teal-500 rounded-full inline-block" />
+                {stats.total} employees &middot; {stats.active} active
+              </p>
+            </div>
+          </div>
+          <Link to="/add-staff"
+            className="group flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 text-white font-semibold shadow-lg shadow-teal-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-sm w-full sm:w-auto">
+            <MdAdd size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            Add Employee
           </Link>
         </div>
 
-        {/* ========== ADVANCED FILTER CARD ========== */}
-        <div className="premium-card rounded-2xl lg:rounded-3xl p-5 lg:p-7 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                <FaFilter className="text-teal-600" size={18} />
+        {/* ── STAT CARDS ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4 mb-5 sm:mb-6">
+          {[
+            { label: "Total Staff",  value: stats.total,       icon: "👥", badge: "bg-teal-100 text-teal-700",    dot: "bg-teal-400" },
+            { label: "Active",       value: stats.active,      icon: "✅", badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" },
+            { label: "Inactive",     value: stats.inactive,    icon: "⏸️", badge: "bg-gray-100 text-gray-500",    dot: "bg-gray-300" },
+            { label: "Unique Roles", value: stats.uniqueRoles, icon: "🏷️", badge: "bg-blue-100 text-blue-700",   dot: "bg-blue-400" },
+          ].map((s, i) => (
+            <div key={i} className="stat-card rounded-2xl p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg sm:text-2xl">{s.icon}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline ${s.badge}`}>
+                  {s.label.split(" ")[0]}
+                </span>
               </div>
-              <h2 className="text-lg lg:text-xl font-bold text-gray-800">Advanced Filters</h2>
-              <span className="bg-teal-100 text-teal-700 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                {filtered.length} results
+              <p className="text-xl sm:text-3xl font-bold text-gray-800 leading-none">{s.value}</p>
+              <p className="text-xs text-gray-400 font-medium mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── FILTER BAR ── */}
+        <div className="premium-card rounded-2xl p-3.5 sm:p-4 lg:p-5 mb-5 sm:mb-6">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                <FaFilter className="text-teal-600" size={12} />
+              </div>
+              <span className="font-bold text-gray-800 text-sm">Filters</span>
+              <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                {filtered.length}
               </span>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* View Toggle */}
-              <div className="bg-gray-100/80 rounded-xl p-1 flex">
-                <button
-                  onClick={() => setViewMode("table")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    viewMode === "table"
-                      ? "bg-white shadow-lg text-teal-700"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Table
+            <div className="flex items-center gap-2">
+              <div className="bg-gray-100 rounded-xl p-0.5 flex">
+                <button onClick={() => setViewMode("table")}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === "table" ? "bg-white shadow text-teal-700" : "text-gray-500"}`}>
+                  <MdTableRows size={14} />
+                  <span className="hidden sm:inline">Table</span>
                 </button>
-                <button
-                  onClick={() => setViewMode("card")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    viewMode === "card"
-                      ? "bg-white shadow-lg text-teal-700"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Cards
+                <button onClick={() => setViewMode("card")}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === "card" ? "bg-white shadow text-teal-700" : "text-gray-500"}`}>
+                  <MdGridView size={14} />
+                  <span className="hidden sm:inline">Cards</span>
                 </button>
               </div>
-              
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setRoleFilter("");
-                  setStatusFilter("");
-                }}
-                className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all"
-              >
-                <MdRefresh size={20} />
+              <button onClick={() => { setSearch(""); setRoleFilter(""); setStatusFilter(""); fetchStaff(); }}
+                className="p-1.5 sm:p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all" title="Refresh">
+                <MdRefresh size={17} />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative group">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-teal-600 transition-colors" size={16} />
-              <input
-                className="w-full h-[50px] lg:h-[54px] pl-11 pr-4 rounded-xl border-2 border-gray-100 bg-white/80 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-gray-700 placeholder:text-gray-400"
-                placeholder="Search name, ID, email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* Search spans full width on mobile, 2 cols on sm */}
+            <div className="relative sm:col-span-2 lg:col-span-1">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+              <input className="s-input w-full h-10 pl-8 pr-3 rounded-xl border-2 border-gray-100 bg-white focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all text-xs sm:text-sm text-gray-700 placeholder:text-gray-400"
+                placeholder="Search name, ID, email…"
+                value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
-            {/* Role Filter */}
             <div className="relative">
-              <select
-                className="w-full h-[50px] lg:h-[54px] px-4 pl-11 rounded-xl border-2 border-gray-100 bg-white/80 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all appearance-none cursor-pointer text-gray-700"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-              >
+              <FaUserTie className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={12} />
+              <select className="s-input w-full h-10 pl-8 pr-7 rounded-xl border-2 border-gray-100 bg-white focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all text-xs sm:text-sm text-gray-700 appearance-none cursor-pointer"
+                value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                 <option value="">All Roles</option>
-                {uniqueRoles.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
+                {uniqueRoles.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
-              <FaUserTie className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
-              <select
-                className="w-full h-[50px] lg:h-[54px] px-4 pl-11 rounded-xl border-2 border-gray-100 bg-white/80 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all appearance-none cursor-pointer text-gray-700"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
+              <FaUserCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={12} />
+              <select className="s-input w-full h-10 pl-8 pr-7 rounded-xl border-2 border-gray-100 bg-white focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all text-xs sm:text-sm text-gray-700 appearance-none cursor-pointer"
+                value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
-              <FaUserCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
             </div>
 
-            {/* Items Per Page */}
             <div className="relative">
-              <select
-                className="w-full h-[50px] lg:h-[54px] px-4 pl-11 rounded-xl border-2 border-gray-100 bg-white/80 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all appearance-none cursor-pointer text-gray-700"
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              >
-                <option value={5}>5 per page</option>
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
+              <FaFileAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={12} />
+              <select className="s-input w-full h-10 pl-8 pr-7 rounded-xl border-2 border-gray-100 bg-white focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all text-xs sm:text-sm text-gray-700 appearance-none cursor-pointer"
+                value={itemsPerPage} onChange={(e) => setItemsPerPage(Number(e.target.value))}>
+                <option value={5}>5 / page</option>
+                <option value={10}>10 / page</option>
+                <option value={20}>20 / page</option>
+                <option value={50}>50 / page</option>
               </select>
-              <FaFileAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
             </div>
           </div>
         </div>
 
-        {/* ========== TABLE VIEW ========== */}
-        {viewMode === "table" ? (
-          <div className="premium-card rounded-2xl lg:rounded-3xl overflow-hidden p-1">
-            <div className="overflow-x-auto">
-              <table className="w-full premium-table">
+        {/* ── LOADING ── */}
+        {loading && (
+          <div className="premium-card rounded-2xl p-12 sm:p-16 flex flex-col items-center justify-center gap-4">
+            <div className="spinner" />
+            <p className="text-gray-500 font-medium text-sm">Loading staff data…</p>
+          </div>
+        )}
+
+        {/* ── ERROR ── */}
+        {!loading && error && (
+          <div className="premium-card rounded-2xl p-10 flex flex-col items-center gap-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
+              <MdRefresh className="text-red-400" size={28} />
+            </div>
+            <div>
+              <p className="font-bold text-gray-800 mb-1">Failed to load staff</p>
+              <p className="text-gray-400 text-sm max-w-xs">{error}</p>
+            </div>
+            <button onClick={fetchStaff}
+              className="px-5 py-2.5 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition-colors text-sm">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* ── TABLE VIEW ── */}
+        {!loading && !error && viewMode === "table" && (
+          <div className="premium-card rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto scroll-x">
+              <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0, minWidth: 480 }}>
                 <thead>
                   <tr className="bg-gradient-to-r from-teal-700 to-teal-600 text-white">
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">#</th>
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">Employee ID</th>
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">Name</th>
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">Role</th>
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">Status</th>
-                    <th className="py-4 px-4 lg:px-6 text-left text-xs lg:text-sm font-semibold">Actions</th>
+                    <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold w-8 sm:w-10">#</th>
+                    <th className="h-xs py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">ID</th>
+                    <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold">Employee</th>
+                    <th className="h-sm py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">Role</th>
+                    <th className="h-sm py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">Status</th>
+                    <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginated.length > 0 ? (
-                    paginated.map((staff, index) => (
-                      <tr key={staff.id} className="group">
-                        <td className="py-4 px-4 lg:px-6 rounded-l-xl font-medium text-gray-600">
-                          {startIndex + index + 1}
-                        </td>
-                        <td className="py-4 px-4 lg:px-6">
-                          <div className="flex items-center gap-2">
-                            <FaIdCard className="text-teal-600" size={16} />
-                            <span className="font-semibold text-gray-800 text-sm lg:text-base">
-                              {staff.employeeId}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 lg:px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-md">
-                              <FaUserTie className="text-white" size={16} />
+                  {paginated.length > 0 ? paginated.map((staff, index) => (
+                    <tr key={staff._id} className="table-row-hover border-b border-gray-50/80">
+                      <td className="py-3 px-3 sm:px-4 text-xs text-gray-400 font-medium">{startIndex + index + 1}</td>
+                      <td className="h-xs py-3 px-3 sm:px-4">
+                        <div className="flex items-center gap-1.5">
+                          <FaIdCard className="text-teal-400 shrink-0" size={11} />
+                          <span className="font-mono font-semibold text-gray-600 text-xs whitespace-nowrap">{staff.employeeId}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 sm:px-4">
+                        <div className="flex items-center gap-2.5">
+                          {staff.profileImage && !staff.profileImage.startsWith("/data/user") ? (
+                            <img src={staff.profileImage} alt={staff.employeeName}
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 border-teal-100 shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 border-2 border-teal-50">
+                              <FaUserTie className="text-white" size={11} />
                             </div>
-                            <div>
-                              <span className="font-semibold text-gray-800 text-sm lg:text-base block">
-                                {staff.employeeName}
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate" style={{ maxWidth: "clamp(80px,20vw,180px)" }}>
+                              {staff.employeeName}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate" style={{ maxWidth: "clamp(80px,18vw,180px)" }}>
+                              {staff.email}
+                            </p>
+                            {/* Mobile-only inline role + status */}
+                            <div className="flex items-center gap-1.5 mt-0.5 sm:hidden flex-wrap">
+                              <span className="text-xs text-teal-600 font-semibold truncate" style={{ maxWidth: 80 }}>{staff.role}</span>
+                              <span className={`status-pill text-xs ${staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                                <span className={`w-1 h-1 rounded-full ${staff.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                                {staff.isActive ? "Active" : "Off"}
                               </span>
-                              <span className="text-xs text-gray-500">{staff.email}</span>
                             </div>
                           </div>
-                        </td>
-                        <td className="py-4 px-4 lg:px-6">
-                          <span className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs lg:text-sm font-medium border border-teal-200">
-                            {staff.role}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 lg:px-6">
-                          <span className={`status-badge ${
-                            staff.isActive 
-                              ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
-                              : "bg-gray-100 text-gray-700 border border-gray-200"
-                          }`}>
-                            {staff.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 lg:px-6 rounded-r-xl">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => navigate(`/staff/${staff.id}`)}
-                              className="p-2.5 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-xl transition-all hover:scale-110"
-                              title="View Details"
-                            >
-                              <MdRemoveRedEye size={18} />
-                            </button>
-                            <button
-                              className="p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all hover:scale-110"
-                              title="Edit"
-                            >
-                              <MdEdit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(staff.id)}
-                              className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all hover:scale-110"
-                              title="Delete"
-                            >
-                              <MdDelete size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
+                        </div>
+                      </td>
+                      <td className="h-sm py-3 px-3 sm:px-4">
+                        <span className="px-2 py-1 bg-teal-50 text-teal-700 rounded-lg text-xs font-semibold border border-teal-100 whitespace-nowrap">
+                          {staff.role}
+                        </span>
+                      </td>
+                      <td className="h-sm py-3 px-3 sm:px-4">
+                        <span className={`status-pill ${staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${staff.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                          {staff.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 sm:px-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => navigate(`/staff/${staff._id}`)}
+                            className="btn-act bg-teal-50 hover:bg-teal-100 text-teal-600" title="View">
+                            <MdRemoveRedEye size={15} />
+                          </button>
+                          <button onClick={() => navigate(`/staff/edit/${staff._id}`)}
+                            className="btn-act bg-blue-50 hover:bg-blue-100 text-blue-600" title="Edit">
+                            <MdEdit size={15} />
+                          </button>
+                          <button onClick={() => setDeleteConfirm({ id: staff._id, name: staff.employeeName })}
+                            className="btn-act bg-red-50 hover:bg-red-100 text-red-500" title="Delete">
+                            <MdDelete size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
                     <tr>
-                      <td colSpan="6" className="py-16 text-center">
+                      <td colSpan={6} className="py-14 text-center">
                         <div className="flex flex-col items-center gap-3">
-                          <FaUsersCog className="text-gray-300" size={48} />
-                          <span className="text-gray-400 font-medium">No employees found</span>
-                          <button 
-                            onClick={() => navigate("/add-staff")}
-                            className="px-6 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors"
-                          >
+                          <FaUsersCog className="text-gray-200" size={44} />
+                          <p className="text-gray-400 font-semibold text-sm">No employees found</p>
+                          <button onClick={() => navigate("/add-staff")}
+                            className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-semibold hover:bg-teal-700 transition-colors">
                             Add First Employee
                           </button>
                         </div>
@@ -464,207 +437,164 @@ const Staff = () => {
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination */}
             {totalPages > 1 && (
-              <Pagination
-                totalPages={totalPages}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                startIndex={startIndex}
-                itemsPerPage={itemsPerPage}
-                filteredLength={filtered.length}
-              />
+              <Pagination totalPages={totalPages} currentPage={currentPage} setCurrentPage={setCurrentPage}
+                startIndex={startIndex} itemsPerPage={itemsPerPage} filteredLength={filtered.length} />
             )}
           </div>
-        ) : (
-          /* ========== CARD VIEW (MOBILE/GRID) ========== */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {paginated.length > 0 ? (
-              paginated.map((staff, index) => (
-                <div
-                  key={staff.id}
-                  className="premium-card rounded-2xl lg:rounded-3xl p-5 lg:p-6 hover:scale-[1.02] transition-all duration-300 group"
-                  style={{ animation: `fadeIn 0.4s ease ${index * 0.05}s backwards` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg">
-                        <FaUserTie className="text-white text-xl lg:text-2xl" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-800 text-base lg:text-lg">
-                          {staff.employeeName}
-                        </h3>
-                        <p className="text-xs lg:text-sm text-teal-600 font-medium">
-                          {staff.role}
-                        </p>
-                        <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-                          staff.isActive 
-                            ? "bg-emerald-100 text-emerald-700" 
-                            : "bg-gray-100 text-gray-700"
-                        }`}>
-                          {staff.isActive ? "Active" : "Inactive"}
-                        </span>
+        )}
+
+        {/* ── CARD VIEW ── */}
+        {!loading && !error && viewMode === "card" && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {paginated.length > 0 ? paginated.map((staff, index) => (
+                <div key={staff._id}
+                  className="premium-card rounded-2xl p-4 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 fade-up flex flex-col"
+                  style={{ animationDelay: `${index * 35}ms` }}>
+
+                  {/* Top */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {staff.profileImage && !staff.profileImage.startsWith("/data/user") ? (
+                        <img src={staff.profileImage} alt={staff.employeeName}
+                          className="w-10 h-10 rounded-xl object-cover border-2 border-teal-100 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 border-2 border-teal-50">
+                          <FaUserTie className="text-white" size={14} />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-gray-800 text-sm truncate">{staff.employeeName}</h3>
+                        <p className="text-xs text-teal-600 font-semibold truncate">{staff.role}</p>
                       </div>
                     </div>
-                    <div className="relative">
-                      <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                        <MdMoreVert className="text-gray-500" size={20} />
-                      </button>
+                    <span className={`status-pill shrink-0 ml-2 ${staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${staff.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                      {staff.isActive ? "On" : "Off"}
+                    </span>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-1.5 py-3 border-t border-b border-gray-100 flex-1">
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <FaIdCard className="text-gray-300 shrink-0" size={11} />
+                      <span className="font-mono font-semibold text-gray-600 truncate">{staff.employeeId}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <MdEmail className="text-gray-300 shrink-0" size={13} />
+                      <span className="truncate">{staff.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <MdPhone className="text-gray-300 shrink-0" size={13} />
+                      <span>{staff.mobile || "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <MdCalendarToday className="text-gray-300 shrink-0" size={11} />
+                      <span>
+                        {staff.joiningDate
+                          ? new Date(staff.joiningDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                          : "—"}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 mb-5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <FaIdCard className="text-gray-400" size={14} />
-                      <span className="text-gray-600">{staff.employeeId}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MdEmail className="text-gray-400" size={14} />
-                      <span className="text-gray-600 truncate">{staff.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MdPhone className="text-gray-400" size={14} />
-                      <span className="text-gray-600">{staff.mobile}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MdCalendarToday className="text-gray-400" size={14} />
-                      <span className="text-gray-600">Joined {staff.joiningDate}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                    <button
-                      onClick={() => navigate(`/staff/${staff.id}`)}
-                      className="p-2.5 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-xl transition-all"
-                    >
-                      <MdRemoveRedEye size={18} />
+                  {/* Actions */}
+                  <div className="flex gap-1.5 mt-3">
+                    <button onClick={() => navigate(`/staff/${staff._id}`)}
+                      className="btn-act flex-1 w-auto h-8 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-600">
+                      <MdRemoveRedEye size={14} />
                     </button>
-                    <button className="p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all">
-                      <MdEdit size={18} />
+                    <button onClick={() => navigate(`/staff/edit/${staff._id}`)}
+                      className="btn-act flex-1 w-auto h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600">
+                      <MdEdit size={14} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(staff.id)}
-                      className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all"
-                    >
-                      <MdDelete size={18} />
+                    <button onClick={() => setDeleteConfirm({ id: staff._id, name: staff.employeeName })}
+                      className="btn-act flex-1 w-auto h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500">
+                      <MdDelete size={14} />
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full py-16 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <FaUsersCog className="text-gray-300" size={64} />
-                  <span className="text-gray-400 font-medium text-lg">No employees found</span>
-                  <button className="px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold">
-                    Add Employee
-                  </button>
+              )) : (
+                <div className="col-span-full premium-card rounded-2xl py-14 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <FaUsersCog className="text-gray-200" size={48} />
+                    <p className="text-gray-400 font-semibold text-sm">No employees found</p>
+                    <button onClick={() => navigate("/add-staff")}
+                      className="px-5 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors">
+                      Add Employee
+                    </button>
+                  </div>
                 </div>
+              )}
+            </div>
+            {totalPages > 1 && (
+              <div className="mt-4 premium-card rounded-2xl overflow-hidden">
+                <Pagination totalPages={totalPages} currentPage={currentPage} setCurrentPage={setCurrentPage}
+                  startIndex={startIndex} itemsPerPage={itemsPerPage} filteredLength={filtered.length} />
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
   );
 };
 
-/* ========== PREMIUM PAGINATION ========== */
-const Pagination = ({ totalPages, currentPage, setCurrentPage, startIndex, itemsPerPage, filteredLength }) => (
-  <div className="px-6 py-5 border-t border-teal-100 bg-gradient-to-r from-white to-teal-50/50">
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="text-sm text-gray-600 font-medium">
-        Showing <span className="text-teal-700 font-bold">{startIndex + 1}</span> to{" "}
-        <span className="text-teal-700 font-bold">
-          {Math.min(startIndex + itemsPerPage, filteredLength)}
-        </span>{" "}
-        of <span className="text-teal-700 font-bold">{filteredLength}</span> employees
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => p - 1)}
-          className={`
-            px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 border-2
-            ${
-              currentPage === 1
-                ? "text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50"
-                : "text-teal-700 border-teal-200 hover:bg-teal-100 hover:border-teal-300 bg-white"
-            }
-          `}
-        >
-          ← Previous
-        </button>
-
-        <div className="flex items-center gap-1.5">
-          {[...Array(totalPages)].map((_, i) => {
-            const page = i + 1;
-            if (
-              page === 1 ||
-              page === totalPages ||
-              (page >= currentPage - 1 && page <= currentPage + 1)
-            ) {
-              return (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`
-                    w-10 h-10 rounded-xl font-semibold transition-all duration-300
-                    ${
-                      currentPage === page
-                        ? "bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-lg shadow-teal-500/30 scale-110"
-                        : "hover:bg-teal-100 text-gray-700 bg-white border-2 border-gray-100"
-                    }
-                  `}
-                >
-                  {page}
-                </button>
-              );
-            }
-            if (page === currentPage - 2 || page === currentPage + 2) {
-              return <span key={page} className="px-2 text-gray-400 font-bold">...</span>;
-            }
-            return null;
-          })}
+/* ── PAGINATION ── */
+const Pagination = ({ totalPages, currentPage, setCurrentPage, startIndex, itemsPerPage, filteredLength }) => {
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push({ type: "page", value: i });
+    } else if (i === currentPage - 2 || i === currentPage + 2) {
+      pages.push({ type: "dot", value: i });
+    }
+  }
+  return (
+    <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-teal-50 bg-gradient-to-r from-white to-teal-50/30">
+      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+        <p className="text-xs text-gray-500">
+          Showing{" "}
+          <span className="font-bold text-teal-700">{startIndex + 1}</span>–<span className="font-bold text-teal-700">{Math.min(startIndex + itemsPerPage, filteredLength)}</span>
+          {" "}of <span className="font-bold text-teal-700">{filteredLength}</span>
+        </p>
+        <div className="flex items-center gap-1 flex-wrap">
+          <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}
+            className={`px-2.5 py-1.5 rounded-lg font-semibold text-xs transition-all border ${
+              currentPage === 1 ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
+              : "text-teal-700 border-teal-200 hover:bg-teal-50 bg-white"}`}>
+            ← Prev
+          </button>
+          {pages.map((p, i) =>
+            p.type === "dot" ? (
+              <span key={i} className="px-1 text-gray-400 text-xs">…</span>
+            ) : (
+              <button key={i} onClick={() => setCurrentPage(p.value)}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-bold text-xs transition-all ${
+                  currentPage === p.value
+                    ? "bg-teal-600 text-white shadow-md shadow-teal-500/30"
+                    : "hover:bg-teal-50 text-gray-600 bg-white border border-gray-100"}`}>
+                {p.value}
+              </button>
+            )
+          )}
+          <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}
+            className={`px-2.5 py-1.5 rounded-lg font-semibold text-xs transition-all border ${
+              currentPage === totalPages ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
+              : "text-teal-700 border-teal-200 hover:bg-teal-50 bg-white"}`}>
+            Next →
+          </button>
         </div>
-
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => p + 1)}
-          className={`
-            px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 border-2
-            ${
-              currentPage === totalPages
-                ? "text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50"
-                : "text-teal-700 border-teal-200 hover:bg-teal-100 hover:border-teal-300 bg-white"
-            }
-          `}
-        >
-          Next →
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// Need to import ChevronDown for selects
-const ChevronDown = ({ size = 18, className = "" }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <polyline points="6 9 12 15 18 9"></polyline>
+const ChevronDown = ({ size = 13, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="6 9 12 15 18 9" />
   </svg>
 );
 
