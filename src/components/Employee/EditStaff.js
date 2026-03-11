@@ -18,7 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const API_URL = "https://pms-backend-t3ox.onrender.com/api/staff";
+const API_URL = "http://31.97.206.144:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 

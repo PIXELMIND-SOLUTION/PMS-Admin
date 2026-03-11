@@ -23,7 +23,7 @@ import {
   MdGridView,
 } from "react-icons/md";
 
-const API_URL = "https://pms-backend-t3ox.onrender.com/api/staff";
+const API_URL = "http://31.97.206.144:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
@@ -38,7 +38,7 @@ const Staff = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState("card");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const fetchStaff = async () => {

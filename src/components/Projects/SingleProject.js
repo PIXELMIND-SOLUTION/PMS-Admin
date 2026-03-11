@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL = 'https://pms-backend-t3ox.onrender.com/api/projects';
+const API_URL = 'http://31.97.206.144:5000/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
 const AUTH_TOKEN = adminDetails?.token;
 

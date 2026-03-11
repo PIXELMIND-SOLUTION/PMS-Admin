@@ -3,7 +3,7 @@ import axios from "axios";
 import { Users, Calendar, Clock } from "lucide-react";
 
 const inputClass =
-  "w-full h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed";
+  "w-full h-11 rounded-xl border border-slate-300 bg-white/70 backdrop-blur-md px-4 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed";
 
 const AddAttendance = () => {
   const [attendance, setAttendance] = useState({
@@ -23,15 +23,30 @@ const AddAttendance = () => {
   useEffect(() => {
     const fetchStaff = async () => {
       try {
+        const adminDetails = JSON.parse(
+          sessionStorage.getItem("adminDetails")
+        );
+        const AUTH_TOKEN = adminDetails?.token;
+
+        if (!AUTH_TOKEN) {
+          alert("Session expired. Please login again.");
+          return;
+        }
+
         const res = await axios.get(
-          "http://31.97.206.144:5000/api/get_all_staffs"
+          "http://31.97.206.144:5000/api/staff",
+          {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          }
         );
 
         if (res.data.success) {
           setStaffList(res.data.data);
         }
       } catch (error) {
-        console.error("Error fetching staff:", error);
+        console.error("Error fetching staff:", error.response || error);
       } finally {
         setLoading(false);
       }
@@ -66,10 +81,14 @@ const AddAttendance = () => {
       return;
     }
 
+    const adminDetails = JSON.parse(
+      sessionStorage.getItem("adminDetails")
+    );
+    const AUTH_TOKEN = adminDetails?.token;
+
     const payload = {
-      staff: selectedStaff._id,
       staffId: selectedStaff._id,
-      name: selectedStaff.staffName,
+      name: selectedStaff.employeeName,
       date: attendance.date,
       status: attendance.status,
       dayType:
@@ -78,8 +97,8 @@ const AddAttendance = () => {
           : undefined,
       hoursWorked:
         attendance.status === "present" &&
-        (attendance.dayType === "halfDay" ||
-          attendance.dayType === "extraHours")
+          (attendance.dayType === "halfDay" ||
+            attendance.dayType === "extraHours")
           ? attendance.workedHours
           : undefined,
     };
@@ -88,8 +107,14 @@ const AddAttendance = () => {
       setSubmitting(true);
 
       const res = await axios.post(
-        "http://31.97.206.144:5000/api/create-attendance",
-        payload
+        "http://31.97.206.144:5000/api/attendance",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       if (res.data.success) {
@@ -106,7 +131,7 @@ const AddAttendance = () => {
     } catch (error) {
       alert(
         error.response?.data?.message ||
-          "Failed to submit attendance."
+        "Failed to submit attendance."
       );
     } finally {
       setSubmitting(false);
@@ -116,13 +141,13 @@ const AddAttendance = () => {
   /* ================= UI ================= */
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+    <div className="min-h-screen p-6 md:p-10">
       <div className="max-w-3xl mx-auto space-y-8">
 
         {/* HEADER */}
 
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
             Add Attendance
           </h1>
           <p className="text-slate-500">
@@ -134,8 +159,15 @@ const AddAttendance = () => {
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 space-y-6"
+          className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl border border-teal-200/40 
+  shadow-[0_10px_40px_rgba(0,128,128,0.25),0_0_30px_rgba(20,184,166,0.15)]
+  hover:shadow-[0_20px_60px_rgba(0,128,128,0.35),0_0_45px_rgba(20,184,166,0.25)]
+  transition-all duration-500 space-y-6 relative overflow-hidden"
         >
+
+          <div className="absolute inset-0 rounded-3xl pointer-events-none 
+bg-gradient-to-r from-transparent via-teal-300/10 to-transparent 
+animate-pulse"></div>
           {loading ? (
             <p className="text-slate-500">Loading staff...</p>
           ) : (
@@ -154,7 +186,7 @@ const AddAttendance = () => {
 
                   {staffList.map((staff) => (
                     <option key={staff._id} value={staff._id}>
-                      {staff.staffName} — {staff.role}
+                      {staff.employeeName} — {staff.role}
                     </option>
                   ))}
                 </select>
@@ -208,35 +240,32 @@ const AddAttendance = () => {
                   </Field>
 
                   {(attendance.dayType === "halfDay" ||
-                    attendance.dayType ===
-                      "extraHours") && (
-                    <Field
-                      label={
-                        attendance.dayType ===
-                        "halfDay"
-                          ? "Worked Hours (max 4)"
-                          : "Extra Hours"
-                      }
-                      icon={<Clock size={16} />}
-                    >
-                      <input
-                        type="number"
-                        name="workedHours"
-                        value={attendance.workedHours}
-                        onChange={handleChange}
-                        placeholder="Enter hours"
-                        min="1"
-                        max={
-                          attendance.dayType ===
-                          "halfDay"
-                            ? "4"
-                            : undefined
+                    attendance.dayType === "extraHours") && (
+                      <Field
+                        label={
+                          attendance.dayType === "halfDay"
+                            ? "Worked Hours (max 4)"
+                            : "Extra Hours"
                         }
-                        required
-                        className={inputClass}
-                      />
-                    </Field>
-                  )}
+                        icon={<Clock size={16} />}
+                      >
+                        <input
+                          type="number"
+                          name="workedHours"
+                          value={attendance.workedHours}
+                          onChange={handleChange}
+                          placeholder="Enter hours"
+                          min="1"
+                          max={
+                            attendance.dayType === "halfDay"
+                              ? "4"
+                              : undefined
+                          }
+                          required
+                          className={inputClass}
+                        />
+                      </Field>
+                    )}
                 </div>
               )}
 
@@ -245,7 +274,7 @@ const AddAttendance = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-12 rounded-xl bg-teal-600 text-white font-semibold shadow-sm transition hover:bg-teal-700 disabled:bg-slate-400"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold shadow-lg shadow-teal-500/30 transition hover:shadow-teal-500/50 hover:scale-[1.02] disabled:bg-slate-400"
               >
                 {submitting
                   ? "Submitting..."

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderPlus, Plus, X, CheckCircle, AlertCircle, Loader } from "lucide-react";
 
-const API_URL = "https://pms-backend-t3ox.onrender.com/api/projects";
+const API_URL = "http://31.97.206.144:5000/api/projects";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 

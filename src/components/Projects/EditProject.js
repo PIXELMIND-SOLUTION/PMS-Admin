@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  FolderEdit, Upload, Plus, X,
-  FileText, CheckCircle, AlertCircle, Loader,
+  Upload, Plus, X,
+  FileText, CheckCircle, AlertCircle, Loader, ChevronDown, Search, User,
 } from "lucide-react";
 
-const API_URL = "https://pms-backend-t3ox.onrender.com/api/projects";
+const API_URL   = "http://31.97.206.144:5000/api/projects";
+const STAFF_URL = "http://31.97.206.144:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
-const AUTH_TOKEN = adminDetails?.token;
-
-/* ─── keep teamMembers in its own state so handleChange can never touch it ─── */
+const AUTH_TOKEN   = adminDetails?.token;
 
 const ROLES      = ["frontend", "backend", "designer", "tester", "manager"];
 const CATEGORIES = [
@@ -18,31 +17,151 @@ const CATEGORIES = [
   { value: "software",       label: "Software" },
   { value: "digital market", label: "Digital Marketing" },
 ];
-const STATUSES = ["active", "on hold", "completed", "cancelled"];
-
+const STATUSES   = ["active", "on hold", "completed", "cancelled"];
 const EMPTY_TEAM = { frontend: [], backend: [], designer: [], tester: [], manager: [] };
 
+/* ─────────────────────────────────────────────────────────── */
+/*  StaffDropdown – searchable dropdown with "type to add"    */
+/* ─────────────────────────────────────────────────────────── */
+const StaffDropdown = ({ role, staffList, addMember }) => {
+  const [open,    setOpen]    = useState(false);
+  const [query,   setQuery]   = useState("");
+  const ref = useRef(null);
+
+  /* close on outside click */
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = staffList.filter(s =>
+    s.employeeName.toLowerCase().includes(query.toLowerCase()) ||
+    s.role.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const pick = (name) => {
+    addMember(role, name);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const handleKey = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (filtered.length === 1) { pick(filtered[0].employeeName); }
+      else if (query.trim())     { addMember(role, query.trim()); setQuery(""); setOpen(false); }
+    }
+    if (e.key === "Escape") setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      {/* trigger row */}
+      <div className="team-row">
+        <div
+          className="e-inp h-10 sm:h-11 px-3.5 rounded-lg sm:rounded-xl text-sm flex items-center gap-2 cursor-text"
+          onClick={() => setOpen(true)}
+        >
+          <Search size={14} className="text-slate-400 shrink-0" />
+          <input
+            type="text"
+            className="flex-1 bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400"
+            placeholder={`Search or type ${role} name…`}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={handleKey}
+          />
+          <ChevronDown
+            size={14}
+            className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => { if (query.trim()) { addMember(role, query.trim()); setQuery(""); setOpen(false); } }}
+          className="h-10 sm:h-11 px-3 sm:px-4 bg-teal-600 hover:bg-teal-700 active:bg-teal-800
+            text-white rounded-lg sm:rounded-xl flex items-center justify-center
+            shrink-0 transition-colors shadow-sm"
+          title={`Add ${role}`}
+        >
+          <Plus size={18} />
+        </button>
+      </div>
+
+      {/* dropdown panel */}
+      {open && (
+        <div className="absolute z-50 left-0 right-10 mt-1 bg-white border border-slate-200
+          rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+
+          {filtered.length === 0 && (
+            <div className="px-4 py-3 text-xs text-slate-400 italic text-center">
+              {query.trim()
+                ? <span>Press <kbd className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 not-italic font-mono text-[11px]">Enter</kbd> to add "<b className="text-teal-600 not-italic">{query}</b>"</span>
+                : "No staff found"}
+            </div>
+          )}
+
+          {filtered.map((s) => (
+            <button
+              key={s._id}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); pick(s.employeeName); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-teal-50
+                text-left transition-colors border-b border-slate-100 last:border-0"
+            >
+              {/* avatar */}
+              <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                <User size={13} className="text-teal-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{s.employeeName}</p>
+                <p className="text-[11px] text-slate-400 truncate">{s.role} · {s.employeeId}</p>
+              </div>
+            </button>
+          ))}
+
+          {/* free-type hint when there ARE matches but user may still want custom */}
+          {filtered.length > 0 && query.trim() && !filtered.some(s => s.employeeName.toLowerCase() === query.toLowerCase()) && (
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); addMember(role, query.trim()); setQuery(""); setOpen(false); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50
+                text-left transition-colors border-t border-slate-100"
+            >
+              <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <Plus size={13} className="text-amber-600" />
+              </div>
+              <p className="text-sm text-amber-700 font-medium">Add "<b>{query}</b>" manually</p>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Main EditProject Component                                 */
+/* ─────────────────────────────────────────────────────────── */
 const EditProject = () => {
   const { id }   = useParams();
   const navigate = useNavigate();
 
-  /* ── page state ── */
   const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast,      setToast]      = useState(null);
 
-  /* ── file state ── */
   const [file,          setFile]          = useState(null);
   const [quotationFile, setQuotationFile] = useState(null);
   const [existingFiles, setExistingFiles] = useState({ uploadfile: null, quotationfile: null });
 
-  /* ── team state — SEPARATE from formData so handleChange never clobbers it ── */
   const [teamMembers, setTeamMembers] = useState(EMPTY_TEAM);
-  const [teamInput,   setTeamInput]   = useState(
-    () => Object.fromEntries(ROLES.map(r => [r, ""]))
-  );
+  const [staffList,   setStaffList]   = useState([]);
 
-  /* ── flat scalar fields only ── */
+  const [milestonePayments, setMilestonePayments] = useState([]);
+
   const [formData, setFormData] = useState({
     projectId:           "",
     projectName:         "",
@@ -60,16 +179,29 @@ const EditProject = () => {
     status:              "active",
   });
 
-  /* milestonePayments kept separately so FormData serialisation is clean */
-  const [milestonePayments, setMilestonePayments] = useState([]);
-
   /* ── TOAST ── */
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
   }, []);
 
-  /* ── FETCH ── */
+  /* ── FETCH STAFF ── */
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const res  = await fetch(STAFF_URL, {
+          headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+        });
+        const data = await res.json();
+        if (data.success) setStaffList(data.data || []);
+      } catch {
+        /* staff fetch failure is non-critical */
+      }
+    };
+    fetchStaff();
+  }, []);
+
+  /* ── FETCH PROJECT ── */
   useEffect(() => { fetchProject(); }, [id]);
 
   const fetchProject = async () => {
@@ -95,12 +227,11 @@ const EditProject = () => {
           projectHandoverDate: fmt(p.projectHandoverDate),
           deadlineDate:        fmt(p.deadlineDate),
           duration:            p.duration            || "",
-          projectCost:         p.projectCost         != null ? String(p.projectCost) : "",
-          milestone:           p.milestone           != null ? String(p.milestone)   : "",
+          projectCost:         p.projectCost != null ? String(p.projectCost) : "",
+          milestone:           p.milestone   != null ? String(p.milestone)   : "",
           status:              p.status              || "active",
         });
 
-        /* Safely hydrate teamMembers — backend may return an object or be missing */
         const raw = p.teamMembers || {};
         setTeamMembers({
           frontend: Array.isArray(raw.frontend) ? raw.frontend : [],
@@ -111,11 +242,7 @@ const EditProject = () => {
         });
 
         setMilestonePayments(Array.isArray(p.milestonePayments) ? p.milestonePayments : []);
-
-        setExistingFiles({
-          uploadfile:    p.uploadfile    || null,
-          quotationfile: p.quotationfile || null,
-        });
+        setExistingFiles({ uploadfile: p.uploadfile || null, quotationfile: p.quotationfile || null });
       } else {
         showToast("error", data.message || "Failed to load project");
       }
@@ -126,26 +253,20 @@ const EditProject = () => {
     }
   };
 
-  /* ── SCALAR FIELD CHANGE — uses functional updater so it's always fresh ── */
+  /* ── FIELD CHANGE ── */
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   }, []);
 
-  /* ── TEAM MEMBER HANDLERS ── */
-  const handleTeamInput = useCallback((role, value) => {
-    setTeamInput(prev => ({ ...prev, [role]: value }));
+  /* ── TEAM HANDLERS ── */
+  const addMember = useCallback((role, name) => {
+    if (!name || !name.trim()) return;
+    setTeamMembers(prev => {
+      if (prev[role].includes(name.trim())) return prev;   // prevent duplicates
+      return { ...prev, [role]: [...prev[role], name.trim()] };
+    });
   }, []);
-
-  const addMember = useCallback((role) => {
-    const val = teamInput[role]?.trim();
-    if (!val) return;
-    setTeamMembers(prev => ({
-      ...prev,
-      [role]: [...prev[role], val],
-    }));
-    setTeamInput(prev => ({ ...prev, [role]: "" }));
-  }, [teamInput]);
 
   const removeMember = useCallback((role, idx) => {
     setTeamMembers(prev => ({
@@ -166,7 +287,6 @@ const EditProject = () => {
       let extraHeaders = {};
 
       if (file || quotationFile) {
-        /* multipart when files are attached */
         const fd = new FormData();
         Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
         fd.append("teamMembers",       JSON.stringify(teamMembers));
@@ -175,11 +295,10 @@ const EditProject = () => {
         if (quotationFile) fd.append("quotationfile", quotationFile);
         body = fd;
       } else {
-        /* plain JSON — cleaner and avoids multer issues */
         body = JSON.stringify({
           ...formData,
-          projectCost:       formData.projectCost ? Number(formData.projectCost) : 0,
-          milestone:         formData.milestone   ? Number(formData.milestone)   : 0,
+          projectCost: formData.projectCost ? Number(formData.projectCost) : 0,
+          milestone:   formData.milestone   ? Number(formData.milestone)   : 0,
           teamMembers,
           milestonePayments,
         });
@@ -233,66 +352,46 @@ const EditProject = () => {
           font-family: 'Inter', -apple-system, sans-serif;
           box-sizing: border-box;
         }
-
-        /* cards */
         .pg-card {
           background: #fff;
           border: 1px solid rgba(20,184,166,0.13);
           box-shadow: 0 2px 16px rgba(0,0,0,0.05);
         }
-
-        /* inputs */
         .e-inp {
           width: 100%;
           background: #fff;
           border: 1.5px solid #e2e8f0;
           transition: border-color .2s, box-shadow .2s;
         }
-        .e-inp:focus {
+        .e-inp:focus-within {
           border-color: #0d9488;
           box-shadow: 0 0 0 3px rgba(13,148,136,0.11);
           outline: none;
         }
-        .e-inp::placeholder { color: #94a3b8; }
-
-        /* team input row — wider add button on mobile */
+        .e-inp input:focus { outline: none; }
+        .e-inp::placeholder, .e-inp input::placeholder { color: #94a3b8; }
         .team-row { display: flex; gap: 8px; }
-        .team-row input { flex: 1; min-width: 0; }
-
-        /* upload zone */
+        .team-row > div:first-child { flex: 1; min-width: 0; }
         .up-zone {
           border: 2px dashed #cbd5e1;
           transition: border-color .25s, background .25s;
           cursor: pointer;
         }
         .up-zone:hover { border-color: #0d9488; background: rgba(20,184,166,0.04); }
-
-        /* section divider */
         .s-div {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 1rem;
+          display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;
         }
         .s-div::before, .s-div::after {
-          content: '';
-          flex: 1;
-          height: 1px;
+          content: ''; flex: 1; height: 1px;
           background: linear-gradient(to right, transparent, rgba(20,184,166,.25), transparent);
         }
-
-        /* toast */
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         .toast-in { animation: slideDown .3s ease forwards; }
-
-        /* spinner */
         @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
         .spin-i { animation: spin .8s linear infinite; }
-
-        /* page entry */
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -300,7 +399,7 @@ const EditProject = () => {
         .fade-up { animation: fadeUp .35s ease forwards; }
       `}</style>
 
-      {/* ── TOAST ── */}
+      {/* TOAST */}
       {toast && (
         <div className={`toast-in fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5
           px-4 py-3 rounded-2xl shadow-2xl font-semibold text-sm
@@ -310,8 +409,7 @@ const EditProject = () => {
             ? <CheckCircle size={17} className="shrink-0" />
             : <AlertCircle size={17} className="shrink-0" />}
           <span className="flex-1 text-xs sm:text-sm leading-snug">{toast.message}</span>
-          <button onClick={() => setToast(null)}
-            className="opacity-80 hover:opacity-100 ml-1 shrink-0">
+          <button onClick={() => setToast(null)} className="opacity-80 hover:opacity-100 ml-1 shrink-0">
             <X size={14} />
           </button>
         </div>
@@ -319,7 +417,7 @@ const EditProject = () => {
 
       <div className="w-full max-w-4xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
 
-        {/* ── HEADER ── */}
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-7 fade-up">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -327,9 +425,7 @@ const EditProject = () => {
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow border border-gray-100
                 flex items-center justify-center text-gray-500
                 hover:text-teal-600 hover:border-teal-200 transition-all shrink-0"
-            >
-              ←
-            </button>
+            >←</button>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight">
                 Edit Project
@@ -347,7 +443,7 @@ const EditProject = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 fade-up">
 
-          {/* ════ PROJECT INFO ════ */}
+          {/* PROJECT INFO */}
           <div className="pg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
             <div className="s-div">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
@@ -361,23 +457,15 @@ const EditProject = () => {
               <EInp name="clientMobile"  value={formData.clientMobile}  onChange={handleChange} label="Client Mobile"  placeholder="Mobile Number" />
               <EInp name="clientEmail"   value={formData.clientEmail}   onChange={handleChange} label="Client Email"   placeholder="Email Address" type="email" />
               <EInp name="clientAddress" value={formData.clientAddress} onChange={handleChange} label="Client Address" placeholder="Address" />
-
-              {/* Category */}
               <div>
-                <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">
-                  Category
-                </label>
+                <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">Category</label>
                 <select name="category" value={formData.category} onChange={handleChange}
                   className="e-inp h-10 sm:h-11 px-3.5 rounded-lg sm:rounded-xl text-sm text-slate-700 appearance-none cursor-pointer">
                   {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </div>
-
-              {/* Status */}
               <div>
-                <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">
-                  Status
-                </label>
+                <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">Status</label>
                 <select name="status" value={formData.status} onChange={handleChange}
                   className="e-inp h-10 sm:h-11 px-3.5 rounded-lg sm:rounded-xl text-sm text-slate-700 appearance-none cursor-pointer">
                   {STATUSES.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
@@ -386,7 +474,7 @@ const EditProject = () => {
             </div>
           </div>
 
-          {/* ════ SCHEDULE & BUDGET ════ */}
+          {/* SCHEDULE & BUDGET */}
           <div className="pg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
             <div className="s-div">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
@@ -403,7 +491,7 @@ const EditProject = () => {
             </div>
           </div>
 
-          {/* ════ TEAM MEMBERS ════ */}
+          {/* TEAM MEMBERS */}
           <div className="pg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
             <div className="s-div">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
@@ -411,14 +499,18 @@ const EditProject = () => {
               </span>
             </div>
 
+            {staffList.length === 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4">
+                ⚠ Staff list couldn't be loaded — you can still type names manually.
+              </p>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {ROLES.map((role) => (
                 <div key={role}>
                   {/* label + count badge */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs sm:text-sm font-semibold capitalize text-slate-700">
-                      {role}
-                    </label>
+                    <label className="text-xs sm:text-sm font-semibold capitalize text-slate-700">{role}</label>
                     {teamMembers[role].length > 0 && (
                       <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">
                         {teamMembers[role].length}
@@ -426,32 +518,12 @@ const EditProject = () => {
                     )}
                   </div>
 
-                  {/* input + add button */}
-                  <div className="team-row">
-                    <input
-                      type="text"
-                      className="e-inp h-10 sm:h-11 px-3.5 rounded-lg sm:rounded-xl text-sm"
-                      placeholder={`Add ${role} member…`}
-                      value={teamInput[role]}
-                      onChange={(e) => handleTeamInput(role, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addMember(role);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addMember(role)}
-                      className="h-10 sm:h-11 px-3 sm:px-4 bg-teal-600 hover:bg-teal-700 active:bg-teal-800
-                        text-white rounded-lg sm:rounded-xl flex items-center justify-center
-                        shrink-0 transition-colors shadow-sm"
-                      title={`Add ${role}`}
-                    >
-                      <Plus size={18} />
-                    </button>
-                  </div>
+                  {/* searchable dropdown */}
+                  <StaffDropdown
+                    role={role}
+                    staffList={staffList}
+                    addMember={addMember}
+                  />
 
                   {/* member chips */}
                   {teamMembers[role].length > 0 ? (
@@ -482,7 +554,7 @@ const EditProject = () => {
             </div>
           </div>
 
-          {/* ════ FILES ════ */}
+          {/* FILES */}
           <div className="pg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
             <div className="s-div">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
@@ -496,27 +568,18 @@ const EditProject = () => {
               {existingFiles.uploadfile && (
                 <ExistingFile file={existingFiles.uploadfile} label="Current Project File" />
               )}
-              <UploadBox
-                label="Replace Quotation"
-                current={quotationFile?.name}
-                setFile={setQuotationFile}
-              />
-              <UploadBox
-                label="Replace Project File"
-                current={file?.name}
-                setFile={setFile}
-              />
+              <UploadBox label="Replace Quotation"    current={quotationFile?.name} setFile={setQuotationFile} />
+              <UploadBox label="Replace Project File" current={file?.name}          setFile={setFile} />
             </div>
           </div>
 
-          {/* ════ ACTION BUTTONS ════ */}
+          {/* ACTION BUTTONS */}
           <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
             <button
               type="button"
               onClick={() => navigate("/projects")}
               className="flex-1 sm:flex-none sm:w-32 py-3 rounded-xl border-2 border-gray-200
-                font-bold text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300
-                transition-all"
+                font-bold text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
             >
               Cancel
             </button>
@@ -545,9 +608,7 @@ const EditProject = () => {
 const EInp = ({ label, className = "", ...props }) => (
   <div>
     {label && (
-      <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">
-        {label}
-      </label>
+      <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-1 sm:mb-1.5 block">{label}</label>
     )}
     <input
       {...props}

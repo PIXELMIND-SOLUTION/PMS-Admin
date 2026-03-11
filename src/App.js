@@ -26,15 +26,9 @@ import ProjectDetails from './components/Projects/SingleProject';
 import AdvancedInvoice from './components/Invoice/AdvaceInvoiceGenerator';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Check on mount if user is logged in
-  useEffect(() => {
-    const adminDetails = sessionStorage.getItem('adminDetails');
-    if (adminDetails) {
-      setIsLoggedIn(true);
-    }
-  }, []);
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!sessionStorage.getItem("adminDetails")
+  );
 
   const handleLogin = () => {
     setIsLoggedIn(true);
