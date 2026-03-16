@@ -11,6 +11,16 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
+const TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YTk2M2MzOGMxMmM1MDA0MWEwOTkzMiIsImlhdCI6MTc3MzY1MDAwOSwiZXhwIjoxNzc0MjU0ODA5fQ.vShFFb3-2i_4Uou-8YCbEDZEFOCR5lhOIPb2Zq808tw";
+
+const API_BASE = "http://31.97.206.144:5000/api";
+
+const authHeaders = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${TOKEN}`,
+};
+
 const AssignedWorks = () => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +31,11 @@ const AssignedWorks = () => {
   const [sheetFilter, setSheetFilter] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
 
+  // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const itemsPerPage = 10; // matches API default limit
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportDates, setExportDates] = useState({
@@ -35,18 +48,24 @@ const AssignedWorks = () => {
   /* ---------------- FETCH ---------------- */
 
   useEffect(() => {
-    fetchAssignments();
-  }, []);
+    fetchAssignments(currentPage);
+  }, [currentPage]);
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = async (page = 1) => {
+    setLoading(true);
     try {
       const res = await fetch(
-        "http://31.97.206.144:5000/api/all_assign_projects"
+        `${API_BASE}/worksheets?page=${page}&limit=${itemsPerPage}`,
+        { headers: authHeaders }
       );
       const data = await res.json();
-      if (data.success) setAssignments(data.data);
+      if (data.success) {
+        setAssignments(data.data);
+        setTotalPages(data.pagination.pages);
+        setTotalRecords(data.pagination.total);
+      }
     } catch {
-      console.log("Fetch error");
+      console.error("Fetch error");
     } finally {
       setLoading(false);
     }
@@ -60,12 +79,17 @@ const AssignedWorks = () => {
     setDeletingId(id);
 
     try {
-      await fetch(
-        `http://31.97.206.144:5000/api/delete_assign_project/${id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`${API_BASE}/delete_assign_project/${id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
 
-      setAssignments((prev) => prev.filter((a) => a._id !== id));
+      if (res.ok) {
+        setAssignments((prev) => prev.filter((a) => a._id !== id));
+        setTotalRecords((prev) => prev - 1);
+      } else {
+        alert("Delete failed");
+      }
     } catch {
       alert("Delete failed");
     }
@@ -81,7 +105,7 @@ const AssignedWorks = () => {
     setExpandedRows(updated);
   };
 
-  /* ---------------- FILTER ---------------- */
+  /* ---------------- CLIENT-SIDE FILTER (on current page data) ---------------- */
 
   const allProjects = [
     ...new Set(assignments.flatMap((a) => a.projects.map((p) => p.projectName))),
@@ -89,7 +113,7 @@ const AssignedWorks = () => {
 
   const filteredAssignments = assignments.filter((a) => {
     const matchesSearch =
-      a.empId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.empId?.toString() || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.employName.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesSheet = sheetFilter ? a.sheet === sheetFilter : true;
@@ -101,59 +125,58 @@ const AssignedWorks = () => {
     return matchesSearch && matchesSheet && matchesProject;
   });
 
-  /* ---------------- PAGINATION ---------------- */
-
-  const totalPages = Math.ceil(filteredAssignments.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-
-  const paginatedAssignments = filteredAssignments.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-
   /* ---------------- EXPORT ---------------- */
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!exportDates.startDate || !exportDates.endDate)
-      return alert("Select dates");
+      return alert("Select both start and end dates");
 
-    const rows = [];
-
-    assignments.forEach((a) => {
-      a.projects.forEach((p) => {
-        const s = new Date(p.startDate);
-        const e = new Date(p.endDate);
-
-        if (
-          s <= new Date(exportDates.endDate) &&
-          e >= new Date(exportDates.startDate)
-        ) {
-          rows.push({
-            EmployeeID: a.empId,
-            Name: a.employName,
-            Sheet: a.sheet,
-            Project: p.projectName,
-            Start: p.startDate,
-            End: p.endDate,
-            Hours: p.hours,
-            Shift: p.shift,
-            Comment: p.comment || "",
-          });
-        }
+    try {
+      // Fetch all data for export (no pagination limit)
+      const res = await fetch(`${API_BASE}/worksheets?limit=1000`, {
+        headers: authHeaders,
       });
-    });
+      const data = await res.json();
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
+      if (!data.success) return alert("Failed to fetch data for export");
 
-    XLSX.utils.book_append_sheet(wb, ws, "Assignments");
+      const rows = [];
 
-    XLSX.writeFile(
-      wb,
-      `AssignedWorks_${exportDates.startDate}.xlsx`
-    );
+      data.data.forEach((a) => {
+        a.projects.forEach((p) => {
+          const s = new Date(p.startDate);
+          const e = new Date(p.endDate);
 
-    setShowExportModal(false);
+          if (
+            s <= new Date(exportDates.endDate) &&
+            e >= new Date(exportDates.startDate)
+          ) {
+            rows.push({
+              EmployeeID: a.empId,
+              Name: a.employName,
+              Sheet: a.sheet,
+              Project: p.projectName,
+              Start: p.startDate,
+              End: p.endDate,
+              Hours: p.hours,
+              Shift: p.shift,
+              Comment: p.comment || "",
+            });
+          }
+        });
+      });
+
+      if (rows.length === 0) return alert("No records found in the selected date range");
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Assignments");
+      XLSX.writeFile(wb, `AssignedWorks_${exportDates.startDate}_to_${exportDates.endDate}.xlsx`);
+
+      setShowExportModal(false);
+    } catch {
+      alert("Export failed");
+    }
   };
 
   /* ---------------- LOADING ---------------- */
@@ -174,7 +197,6 @@ const AssignedWorks = () => {
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* HEADER */}
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">
@@ -182,6 +204,11 @@ const AssignedWorks = () => {
             </h1>
             <p className="text-slate-500">
               Manage employee project assignments
+              {totalRecords > 0 && (
+                <span className="ml-2 text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-semibold">
+                  {totalRecords} total
+                </span>
+              )}
             </p>
           </div>
 
@@ -205,14 +232,9 @@ const AssignedWorks = () => {
         </div>
 
         {/* FILTERS */}
-
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 grid md:grid-cols-3 gap-4">
-
           <div className="relative">
-            <Search
-              size={16}
-              className="absolute top-3 left-3 text-slate-400"
-            />
+            <Search size={16} className="absolute top-3 left-3 text-slate-400" />
             <input
               placeholder="Search employee..."
               className="w-full pl-9 h-11 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
@@ -227,7 +249,10 @@ const AssignedWorks = () => {
           <select
             className="h-11 border border-slate-300 rounded-xl px-3 focus:ring-2 focus:ring-teal-500"
             value={sheetFilter}
-            onChange={(e) => setSheetFilter(e.target.value)}
+            onChange={(e) => {
+              setSheetFilter(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All Sheets</option>
             <option>frontend</option>
@@ -241,7 +266,10 @@ const AssignedWorks = () => {
           <select
             className="h-11 border border-slate-300 rounded-xl px-3 focus:ring-2 focus:ring-teal-500"
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={(e) => {
+              setProjectFilter(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All Projects</option>
             {allProjects.map((p) => (
@@ -251,9 +279,7 @@ const AssignedWorks = () => {
         </div>
 
         {/* TABLE */}
-
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-
           <table className="w-full text-sm">
             <thead className="bg-slate-100 text-slate-600">
               <tr>
@@ -266,101 +292,137 @@ const AssignedWorks = () => {
             </thead>
 
             <tbody>
-              {paginatedAssignments.map((a, i) => (
-                <React.Fragment key={a._id}>
-                  <tr className="border-t hover:bg-slate-50 transition">
-                    <td className="p-4">{startIndex + i + 1}</td>
+              {filteredAssignments.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-10 text-center text-slate-400">
+                    No assignments found.
+                  </td>
+                </tr>
+              ) : (
+                filteredAssignments.map((a, i) => (
+                  <React.Fragment key={a._id}>
+                    <tr className="border-t hover:bg-slate-50 transition">
+                      <td className="p-4">
+                        {(currentPage - 1) * itemsPerPage + i + 1}
+                      </td>
 
-                    <td className="p-4">
-                      <div className="font-semibold text-slate-700">
-                        {a.employName}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        {a.empId}
-                      </div>
-                    </td>
+                      <td className="p-4">
+                        <div className="font-semibold text-slate-700">
+                          {a.employName}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {/* empId is an ObjectId string from API */}
+                          ID: {typeof a.empId === "string" ? a.empId.slice(-6).toUpperCase() : a.empId}
+                        </div>
+                      </td>
 
-                    <td className="p-4 text-center">
-                      <span className="px-3 py-1 text-xs rounded-full bg-teal-100 text-teal-700 font-semibold">
-                        {a.sheet}
-                      </span>
-                    </td>
+                      <td className="p-4 text-center">
+                        <span className="px-3 py-1 text-xs rounded-full bg-teal-100 text-teal-700 font-semibold">
+                          {a.sheet}
+                        </span>
+                      </td>
 
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => toggleExpand(a._id)}
-                        className="flex items-center gap-1 mx-auto text-teal-600 font-semibold"
-                      >
-                        {a.projects.length} Projects
-                        {expandedRows.has(a._id) ? (
-                          <ChevronUp size={16} />
-                        ) : (
-                          <ChevronDown size={16} />
-                        )}
-                      </button>
-                    </td>
-
-                    <td className="p-4">
-                      <div className="flex justify-end gap-4">
-                        <Link to={`/edit-worksheet/${a._id}`}>
-                          <Pencil
-                            size={18}
-                            className="text-teal-600 hover:scale-110 transition"
-                          />
-                        </Link>
-
-                        <button onClick={() => handleDelete(a._id)}>
-                          <Trash2
-                            size={18}
-                            className="text-red-500 hover:scale-110 transition"
-                          />
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => toggleExpand(a._id)}
+                          className="flex items-center gap-1 mx-auto text-teal-600 font-semibold"
+                        >
+                          {a.projects.length} Project{a.projects.length !== 1 ? "s" : ""}
+                          {expandedRows.has(a._id) ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
 
-                  {/* EXPANDED */}
+                      <td className="p-4">
+                        <div className="flex justify-end gap-4">
+                          <Link to={`/edit-worksheet/${a._id}`}>
+                            <Pencil
+                              size={18}
+                              className="text-teal-600 hover:scale-110 transition"
+                            />
+                          </Link>
 
-                  {expandedRows.has(a._id) && (
-                    <tr className="bg-slate-50">
-                      <td colSpan="5" className="p-6">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {a.projects.map((p, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"
-                            >
-                              <h4 className="font-semibold text-slate-700">
-                                {p.projectName}
-                              </h4>
-
-                              <div className="text-xs text-slate-500 mt-2 space-y-1">
-                                <p>Start: {p.startDate}</p>
-                                <p>End: {p.endDate}</p>
-                                <p>Hours: {p.hours}</p>
-                                <p>Shift: {p.shift}</p>
-                              </div>
-
-                              {p.comment && (
-                                <p className="text-xs mt-2 text-slate-600">
-                                  {p.comment}
-                                </p>
-                              )}
-                            </div>
-                          ))}
+                          <button
+                            onClick={() => handleDelete(a._id)}
+                            disabled={deletingId === a._id}
+                          >
+                            {deletingId === a._id ? (
+                              <span className="text-xs text-slate-400">...</span>
+                            ) : (
+                              <Trash2
+                                size={18}
+                                className="text-red-500 hover:scale-110 transition"
+                              />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* EXPANDED PROJECTS */}
+                    {expandedRows.has(a._id) && (
+                      <tr className="bg-slate-50">
+                        <td colSpan="5" className="p-6">
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {a.projects.map((p, idx) => (
+                              <div
+                                key={p._id || idx}
+                                className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"
+                              >
+                                <h4 className="font-semibold text-slate-700">
+                                  {p.projectName}
+                                </h4>
+
+                                <div className="text-xs text-slate-500 mt-2 space-y-1">
+                                  <p>
+                                    <span className="font-medium">Start:</span>{" "}
+                                    {p.startDate}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">End:</span>{" "}
+                                    {p.endDate}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Hours:</span>{" "}
+                                    {p.hours}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Shift:</span>{" "}
+                                    {p.shift}
+                                  </p>
+                                </div>
+
+                                {p.comment && (
+                                  <p className="text-xs mt-2 text-slate-600 italic border-t pt-2">
+                                    {p.comment}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
             </tbody>
           </table>
 
-          {/* PAGINATION */}
-
+          {/* SERVER-SIDE PAGINATION */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 p-6">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 h-10 rounded-xl border hover:bg-slate-100 disabled:opacity-40"
+              >
+                ‹ Prev
+              </button>
+
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i}
@@ -374,13 +436,20 @@ const AssignedWorks = () => {
                   {i + 1}
                 </button>
               ))}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 h-10 rounded-xl border hover:bg-slate-100 disabled:opacity-40"
+              >
+                Next ›
+              </button>
             </div>
           )}
         </div>
       </div>
 
       {/* EXPORT MODAL */}
-
       {showExportModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div
@@ -388,30 +457,37 @@ const AssignedWorks = () => {
             className="bg-white rounded-3xl p-8 w-full max-w-md space-y-4 shadow-xl"
           >
             <h2 className="text-xl font-bold">Export Sheet</h2>
+            <p className="text-sm text-slate-500">
+              All records within the date range will be exported.
+            </p>
 
-            <input
-              type="date"
-              className="w-full h-11 border rounded-xl px-3"
-              value={exportDates.startDate}
-              onChange={(e) =>
-                setExportDates({
-                  ...exportDates,
-                  startDate: e.target.value,
-                })
-              }
-            />
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">
+                Start Date
+              </label>
+              <input
+                type="date"
+                className="w-full h-11 border rounded-xl px-3"
+                value={exportDates.startDate}
+                onChange={(e) =>
+                  setExportDates({ ...exportDates, startDate: e.target.value })
+                }
+              />
+            </div>
 
-            <input
-              type="date"
-              className="w-full h-11 border rounded-xl px-3"
-              value={exportDates.endDate}
-              onChange={(e) =>
-                setExportDates({
-                  ...exportDates,
-                  endDate: e.target.value,
-                })
-              }
-            />
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">
+                End Date
+              </label>
+              <input
+                type="date"
+                className="w-full h-11 border rounded-xl px-3"
+                value={exportDates.endDate}
+                onChange={(e) =>
+                  setExportDates({ ...exportDates, endDate: e.target.value })
+                }
+              />
+            </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <button
