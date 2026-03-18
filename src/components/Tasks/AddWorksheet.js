@@ -171,7 +171,7 @@ const AddWorksheet = () => {
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Select Employee</label>
                 <select
-                  value={formData.empId}
+                  value={formData.staffId}
                   onChange={handleEmployeeSelect}
                   required
                   disabled={loading}
@@ -179,7 +179,7 @@ const AddWorksheet = () => {
                 >
                   <option value="">Choose an employee</option>
                   {staffOptions.map((staff) => (
-                    <option key={staff.id} value={staff.staffId}>
+                    <option key={staff.id} value={staff.id}>
                       {staff.staffId} — {staff.staffName}
                     </option>
                   ))}
