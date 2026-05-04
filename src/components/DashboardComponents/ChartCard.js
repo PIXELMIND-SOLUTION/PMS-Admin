@@ -27,10 +27,10 @@ const ChartCard = () => {
       try {
         setLoading(true);
 
-        const countsRes = await fetch("http://31.97.206.144:5000/api/counts");
+        const countsRes = await fetch("http://31.97.228.17:5000/api/counts");
         const countsData = await countsRes.json();
 
-        const staffRes = await fetch("http://31.97.206.144:5000/api/get_all_staffs");
+        const staffRes = await fetch("http://31.97.228.17:5000/api/get_all_staffs");
         const staffData = await staffRes.json();
 
         if (countsData.success && staffData.success) {

@@ -13,7 +13,7 @@ const ProjectsTable = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch("http://31.97.206.144:5000/api/projects");
+        const res = await fetch("http://31.97.228.17:5000/api/projects");
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
           setProjects(data.data);

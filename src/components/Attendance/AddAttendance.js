@@ -34,7 +34,7 @@ const AddAttendance = () => {
         }
 
         const res = await axios.get(
-          "http://31.97.206.144:5000/api/staff",
+          "http://31.97.228.17:5000/api/staff",
           {
             headers: {
               Authorization: `Bearer ${AUTH_TOKEN}`,
@@ -107,7 +107,7 @@ const AddAttendance = () => {
       setSubmitting(true);
 
       const res = await axios.post(
-        "http://31.97.206.144:5000/api/attendance",
+        "http://31.97.228.17:5000/api/attendance",
         payload,
         {
           headers: {

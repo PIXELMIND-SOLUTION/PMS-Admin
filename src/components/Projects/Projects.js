@@ -4,7 +4,7 @@ import { MdEdit, MdDelete, MdVisibility, MdDownload, MdRefresh, MdAdd, MdGridVie
 import { FaMobileAlt, FaEnvelope, FaSearch, FaFilter, FaFolderOpen, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL      = 'http://31.97.206.144:5000/api/projects';
+const API_URL      = 'http://31.97.228.17:5000/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
 const AUTH_TOKEN   = adminDetails?.token;
 

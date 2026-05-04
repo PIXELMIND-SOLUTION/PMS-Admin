@@ -22,9 +22,9 @@ ChartJS.register(
 /* ──────────────────────────────────────────── */
 /*  CONFIG                                      */
 /* ──────────────────────────────────────────── */
-const STATS_API      = "http://31.97.206.144:5000/api/attendance/stats";
-const ATTENDANCE_API = "http://31.97.206.144:5000/api/attendance";
-const STAFF_API      = "http://31.97.206.144:5000/api/attendance/staff";
+const STATS_API      = "http://31.97.228.17:5000/api/attendance/stats";
+const ATTENDANCE_API = "http://31.97.228.17:5000/api/attendance";
+const STAFF_API      = "http://31.97.228.17:5000/api/attendance/staff";
 
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN   = adminDetails?.token;
