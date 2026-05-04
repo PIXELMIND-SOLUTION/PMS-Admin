@@ -18,4 +18,4 @@ export const getAuthHeaders = () => {
   };
 };
 
-export const API_BASE = "http://31.97.228.17:5000/api";
+export const API_BASE = "https://pmsbackend.pixelmindsolutions.com/api";

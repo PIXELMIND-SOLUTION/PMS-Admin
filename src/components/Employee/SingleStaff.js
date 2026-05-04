@@ -6,7 +6,7 @@ import {
 } from "react-icons/md";
 import { FaUserTie, FaIdCard, FaFileAlt, FaPrint } from "react-icons/fa";
 
-const API_URL     = "http://31.97.228.17:5000/api/staff";
+const API_URL     = "https://pmsbackend.pixelmindsolutions.com/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN  = adminDetails?.token;
 
@@ -149,7 +149,7 @@ const StaffDetails = () => {
               {/* Avatar */}
               {profileImageUrl ? (
                 <img
-                  src={`http://31.97.228.17:5000${profileImageUrl}`}
+                  src={`https://pmsbackend.pixelmindsolutions.com${profileImageUrl}`}
                   alt={staff.employeeName}
                   className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl object-cover
                     border-4 border-white/30 shadow-xl shrink-0"
