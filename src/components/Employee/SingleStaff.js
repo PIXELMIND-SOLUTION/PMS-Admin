@@ -6,86 +6,153 @@ import {
 } from "react-icons/md";
 import { FaUserTie, FaIdCard, FaFileAlt, FaPrint } from "react-icons/fa";
 
-const API_URL     = "http://31.97.228.17:5000/api/staff";
+const API_URL = "http://localhost:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
-const AUTH_TOKEN  = adminDetails?.token;
+const AUTH_TOKEN = adminDetails?.token;
 
 const StaffDetails = () => {
-  const { id }     = useParams();
-  const navigate   = useNavigate();
-  const [staff,    setStaff]   = useState(null);
-  const [loading,  setLoading] = useState(true);
-  const [error,    setError]   = useState("");
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [staff, setStaff] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => { fetchStaffDetails(); }, [id]);
+  useEffect(() => {
+    fetchStaffDetails();
+  }, [id]);
 
   const fetchStaffDetails = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(`${API_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      console.log("📡 Fetching staff details for ID:", id);
+      
+      const response = await fetch(`${API_URL}/${id}`, {
+        headers: { 
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          "Content-Type": "application/json"
+        },
       });
-      const data = await res.json();
-      if (data.success) setStaff(data.data);
-      else setError(data.message || "Failed to load staff details");
+      
+      const data = await response.json();
+      console.log("📡 Staff response:", data);
+      
+      if (response.ok && data.success) {
+        setStaff(data.data);
+        // After getting staff details, fetch their documents
+        if (data.data.employeeId) {
+          fetchStaffDocuments(data.data.employeeId);
+        }
+      } else {
+        setError(data.message || "Failed to load staff details");
+      }
     } catch (err) {
+      console.error("❌ Fetch error:", err);
       setError("Network error: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (d) =>
-    d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-      : "Not specified";
+  // Fetch documents by employee ID
+  const fetchStaffDocuments = async (employeeId) => {
+    try {
+      setLoadingDocs(true);
+      console.log("📡 Fetching documents for employee:", employeeId);
+      
+      const response = await fetch(`${API_URL}/documents/employee/${employeeId}`, {
+        headers: { 
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+      });
+      
+      const data = await response.json();
+      console.log("📡 Documents response:", data);
+      
+      if (response.ok && data.success) {
+        setDocuments(data.data || []);
+        console.log(`✅ Loaded ${data.data?.length || 0} documents`);
+      } else {
+        console.warn("No documents found or error fetching:", data.message);
+        setDocuments([]);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching documents:", err);
+      setDocuments([]);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
 
-  /* ── Loading ── */
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="flex flex-col items-center gap-3">
-        <div style={{
-          width: 44, height: 44,
-          border: "3px solid #ccfafa",
-          borderTop: "3px solid #0d9488",
-          borderRadius: "50%",
-          animation: "spin .8s linear infinite",
-        }} />
-        <p className="text-gray-500 text-sm font-medium">Loading staff details…</p>
-        <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
-      </div>
-    </div>
-  );
+  const formatDate = (d) => {
+    if (!d) return "Not specified";
+    return new Date(d).toLocaleDateString("en-US", { 
+      year: "numeric", 
+      month: "long", 
+      day: "numeric" 
+    });
+  };
 
-  /* ── Error ── */
-  if (error || !staff) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="text-center bg-white rounded-2xl shadow p-8 max-w-sm w-full">
-        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-          <MdPerson className="text-red-400 text-2xl" />
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "Unknown";
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType === 'pdf') return '📄';
+    if (fileType === 'jpg' || fileType === 'jpeg' || fileType === 'png') return '🖼️';
+    if (fileType === 'doc' || fileType === 'docx') return '📝';
+    return '📎';
+  };
+
+  // Loading screen
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div style={{
+            width: 44, height: 44,
+            border: "3px solid #ccfafa",
+            borderTop: "3px solid #0d9488",
+            borderRadius: "50%",
+            animation: "spin .8s linear infinite",
+          }} />
+          <p className="text-gray-500 text-sm font-medium">Loading staff details…</p>
+          <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
         </div>
-        <h2 className="text-lg font-bold text-gray-800 mb-1">Staff Not Found</h2>
-        <p className="text-sm text-gray-500 mb-4">{error}</p>
-        <button onClick={() => navigate("/staff")}
-          className="px-5 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors">
-          Back to Staff
-        </button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Error screen
+  if (error || !staff) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center bg-white rounded-2xl shadow p-8 max-w-sm w-full">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <MdPerson className="text-red-400 text-2xl" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-800 mb-1">Staff Not Found</h2>
+          <p className="text-sm text-gray-500 mb-4">{error || "No staff data available"}</p>
+          <button 
+            onClick={() => navigate("/staff")}
+            className="px-5 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors"
+          >
+            Back to Staff
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const profileImageUrl = staff.profileImage || null;
-  const idCardImageUrl  =
-    staff.idCardImage && !staff.idCardImage.startsWith("/data/user")
-      ? staff.idCardImage : null;
-
-  const docEntries = [];
-  if (staff.documents && typeof staff.documents === "object") {
-    Object.entries(staff.documents).forEach(([category, files]) => {
-      if (Array.isArray(files)) {
-        files.forEach(f => docEntries.push({ name: f.name || category, path: f.path }));
-      }
-    });
-  }
+  const idCardImageUrl = staff.idCardImage && !staff.idCardImage.startsWith("/data/user")
+    ? staff.idCardImage : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -103,7 +170,7 @@ const StaffDetails = () => {
 
       <div className="max-w-6xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 
-        {/* ── Top Bar ── */}
+        {/* Top Bar */}
         <div className="no-print mb-5 sm:mb-6 flex items-center justify-between gap-3 flex-wrap fade-up">
           <button
             onClick={() => navigate("/staff")}
@@ -125,7 +192,7 @@ const StaffDetails = () => {
               <span className="hidden sm:inline">Print</span>
             </button>
             <Link
-              to={`/edit-staff/${id}`}
+              to={`/staff/edit/${staff.employeeId}`}
               className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold
                 bg-teal-600 text-white rounded-xl shadow-sm
                 hover:bg-teal-700 transition-colors"
@@ -136,10 +203,9 @@ const StaffDetails = () => {
           </div>
         </div>
 
-        {/* ── Profile Banner ── */}
+        {/* Profile Banner */}
         <div className="fade-up rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg mb-5 sm:mb-6
           bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800">
-          {/* decorative circles */}
           <div className="relative px-4 sm:px-6 md:px-8 py-6 sm:py-8 overflow-hidden">
             <div className="absolute -top-10 -right-10 w-48 sm:w-64 h-48 sm:h-64 rounded-full bg-white/5 pointer-events-none" />
             <div className="absolute -bottom-12 -left-8 w-40 sm:w-52 h-40 sm:h-52 rounded-full bg-white/5 pointer-events-none" />
@@ -149,10 +215,14 @@ const StaffDetails = () => {
               {/* Avatar */}
               {profileImageUrl ? (
                 <img
-                  src={`http://31.97.228.17:5000${profileImageUrl}`}
+                  src={profileImageUrl}
                   alt={staff.employeeName}
                   className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl object-cover
                     border-4 border-white/30 shadow-xl shrink-0"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl
@@ -205,7 +275,7 @@ const StaffDetails = () => {
           </div>
         </div>
 
-        {/* ── Main Grid ── */}
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 fade-up">
 
           {/* Left col: spans 2 on lg */}
@@ -265,6 +335,55 @@ const StaffDetails = () => {
               </div>
             </div>
 
+            {/* Address Section */}
+            {(staff.address?.street || staff.address?.city || staff.address?.state) && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <SectionTitle>Address</SectionTitle>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-gray-700">
+                    {staff.address.street && <>{staff.address.street}<br /></>}
+                    {staff.address.city && staff.address.city}
+                    {staff.address.city && staff.address.state && ", "}
+                    {staff.address.state && staff.address.state}
+                    {staff.address.pincode && <><br />PIN: {staff.address.pincode}</>}
+                    {staff.address.country && <><br />{staff.address.country}</>}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Emergency Contact Section */}
+            {(staff.emergencyContact?.name || staff.emergencyContact?.relation || staff.emergencyContact?.mobile) && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <SectionTitle>Emergency Contact</SectionTitle>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {staff.emergencyContact.name && (
+                    <InfoCard
+                      icon={<MdPerson className="text-orange-500" />}
+                      label="Name"
+                      value={staff.emergencyContact.name}
+                    />
+                  )}
+                  {staff.emergencyContact.relation && (
+                    <InfoCard
+                      icon={<MdWork className="text-purple-500" />}
+                      label="Relation"
+                      value={staff.emergencyContact.relation}
+                    />
+                  )}
+                  {staff.emergencyContact.mobile && (
+                    <ContactCard
+                      icon={<MdPhone className="text-blue-600" />}
+                      label="Mobile"
+                      value={staff.emergencyContact.mobile}
+                      href={`tel:${staff.emergencyContact.mobile}`}
+                      linkClass="text-blue-600 hover:text-blue-700"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* ID Card image */}
             {idCardImageUrl && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
@@ -274,6 +393,10 @@ const StaffDetails = () => {
                     src={idCardImageUrl}
                     alt="ID Card"
                     className="rounded-xl max-h-52 sm:max-h-64 object-cover shadow-md w-full sm:w-auto"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
                   />
                 </div>
               </div>
@@ -283,51 +406,80 @@ const StaffDetails = () => {
           {/* Right col */}
           <div className="space-y-4 sm:space-y-5">
 
-            {/* Documents */}
-            {docEntries.length > 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <SectionTitle>Documents</SectionTitle>
-                <div className="space-y-2.5">
-                  {docEntries.map((doc, i) => (
+            {/* Documents Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+              <SectionTitle>
+                <FaFileAlt className="text-teal-600" />
+                Documents
+              </SectionTitle>
+              
+              {loadingDocs ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin" />
+                </div>
+              ) : documents.length > 0 ? (
+                <div className="space-y-2.5 max-h-96 overflow-y-auto">
+                  {documents.map((doc, index) => (
                     <a
-                      key={i}
-                      href={doc.path}
+                      key={doc.documentId || index}
+                      href={doc.filePath}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-between p-3 sm:p-3.5
                         border border-gray-100 rounded-xl hover:border-teal-200 hover:bg-teal-50
                         transition-all group"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-teal-50 group-hover:bg-teal-100
                           flex items-center justify-center shrink-0 transition-colors">
-                          <FaFileAlt className="text-teal-600 text-sm" />
+                          <span className="text-lg">{getFileIcon(doc.fileType)}</span>
                         </div>
-                        <span className="text-sm font-semibold text-gray-700 truncate">{doc.name}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-700 truncate">
+                            {doc.documentName || doc.fileName}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">
+                              {doc.fileType?.toUpperCase() || "Unknown"}
+                            </span>
+                            {doc.fileSize && (
+                              <span className="text-xs text-gray-400">
+                                • {formatFileSize(doc.fileSize)}
+                              </span>
+                            )}
+                            {doc.uploadedAt && (
+                              <span className="text-xs text-gray-400">
+                                • {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          {doc.description && (
+                            <p className="text-xs text-gray-500 mt-1 truncate">
+                              {doc.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <MdDownload className="text-gray-400 group-hover:text-teal-600 shrink-0 ml-2 transition-colors text-lg" />
                     </a>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <SectionTitle>Documents</SectionTitle>
+              ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                     <FaFileAlt className="text-gray-300 text-xl" />
                   </div>
                   <p className="text-sm text-gray-400">No documents uploaded</p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Quick Stats card */}
             <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
               <p className="text-xs font-bold uppercase tracking-widest text-teal-200 mb-4">Quick Stats</p>
               <div className="space-y-3">
                 <StatRow label="Member Since" value={formatDate(staff.createdAt)} />
-                <StatRow label="Last Updated"  value={formatDate(staff.updatedAt)} />
+                <StatRow label="Last Updated" value={formatDate(staff.updatedAt)} />
                 {staff.lastActive && (
                   <StatRow label="Last Active" value={formatDate(staff.lastActive)} />
                 )}
@@ -340,7 +492,7 @@ const StaffDetails = () => {
   );
 };
 
-/* ── Reusable sub-components ── */
+/* Reusable sub-components */
 
 const SectionTitle = ({ children }) => (
   <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 pb-2.5
@@ -356,7 +508,7 @@ const InfoCard = ({ icon, label, value, valueClass = "text-gray-800" }) => (
     </div>
     <div className="min-w-0">
       <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
-      <p className={`text-sm font-semibold truncate ${valueClass}`}>{value}</p>
+      <p className={`text-sm font-semibold truncate ${valueClass}`}>{value || "Not specified"}</p>
     </div>
   </div>
 );
@@ -368,9 +520,13 @@ const ContactCard = ({ icon, label, value, href, linkClass }) => (
     </div>
     <div className="min-w-0">
       <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
-      <a href={href} className={`text-sm font-semibold truncate block hover:underline transition-colors ${linkClass}`}>
-        {value || "Not provided"}
-      </a>
+      {value ? (
+        <a href={href} className={`text-sm font-semibold truncate block hover:underline transition-colors ${linkClass}`}>
+          {value}
+        </a>
+      ) : (
+        <p className="text-sm text-gray-400">Not provided</p>
+      )}
     </div>
   </div>
 );

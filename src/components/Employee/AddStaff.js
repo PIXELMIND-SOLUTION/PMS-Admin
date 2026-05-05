@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User,
@@ -19,7 +19,7 @@ import {
   Loader,
 } from "lucide-react";
 
-const API_URL = "http://31.97.228.17:5000/api/staff";
+const API_BASE_URL = "http://localhost:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
@@ -35,12 +35,24 @@ const AddStaff = () => {
     joiningDate: "",
     bloodGroup: "",
     password: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India"
+    },
+    emergencyContact: {
+      name: "",
+      relation: "",
+      mobile: ""
+    }
   });
 
   const [profilePreview, setProfilePreview] = useState(null);
-  const [idPreview, setIdPreview]             = useState(null);
-  const [profileImage, setProfileImage]       = useState(null);
-  const [idCardImage, setIdCardImage]         = useState(null);
+  const [idPreview, setIdPreview] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [idCardImage, setIdCardImage] = useState(null);
 
   const [documents, setDocuments] = useState({
     experienceLetters: [],
@@ -55,22 +67,78 @@ const AddStaff = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [toast, setToast]     = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showAddress, setShowAddress] = useState(false);
+  const [showEmergency, setShowEmergency] = useState(false);
+  
+  // Data from backend - no fallbacks
+  const [roles, setRoles] = useState([]);
+  const [bloodGroups, setBloodGroups] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [apiError, setApiError] = useState(false);
 
-  const roles = [
-    "CEO","HR","Backend Developer","Frontend Developer",
-    "Full Stack Developer","Project Manager","Designer",
-    "QA Engineer","DevOps Engineer","Team Lead",
-  ];
-  const bloodGroups = ["A+","A-","B+","B-","AB+","AB-","O+","O-"];
+  // Fetch roles and blood groups from backend
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/metadata`, {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.roles && data.bloodGroups) {
+          setRoles(data.roles);
+          setBloodGroups(data.bloodGroups);
+          setApiError(false);
+        } else {
+          throw new Error("Invalid data format");
+        }
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error);
+        setApiError(true);
+        showToast("error", "Failed to load roles and blood groups. Please refresh the page.");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    
+    if (AUTH_TOKEN) {
+      fetchDropdownData();
+    } else {
+      setLoadingData(false);
+      setApiError(true);
+      showToast("error", "Authentication token not found. Please login again.");
+    }
+  }, []);
 
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
   };
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
   const handleImageUpload = (e, setter, previewSetter) => {
     const file = e.target.files[0];
@@ -94,38 +162,92 @@ const AddStaff = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.employeeId.trim())                        { showToast("error","Employee ID is required."); return; }
-    if (!formData.employeeName.trim())                      { showToast("error","Employee name is required."); return; }
-    if (!formData.role)                                     { showToast("error","Please select a role."); return; }
-    if (!formData.mobile.trim() || formData.mobile.length < 10) { showToast("error","Please enter a valid 10-digit mobile number."); return; }
-    if (!formData.email.trim())                             { showToast("error","Email is required."); return; }
+    
+    // Validation matching backend required fields
+    if (!formData.employeeName.trim()) {
+      showToast("error", "employeeName is required.");
+      return;
+    }
+    if (!formData.role) {
+      showToast("error", "role is required.");
+      return;
+    }
+    if (!formData.mobile.trim() || !/^[0-9]{10}$/.test(formData.mobile)) {
+      showToast("error", "Valid 10-digit mobile number is required.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      showToast("error", "email is required.");
+      return;
+    }
+    if (!formData.password) {
+      showToast("error", "password is required.");
+      return;
+    }
+    if (!formData.employeeId.trim()) {
+      showToast("error", "employeeId is required.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const payload = {
-        employeeId:   formData.employeeId.trim(),
-        employeeName: formData.employeeName.trim(),
-        role:         formData.role,
-        mobile:       formData.mobile.trim(),
-        email:        formData.email.trim(),
-        joiningDate:  formData.joiningDate || new Date().toISOString(),
-        bloodGroup:   formData.bloodGroup  || "O+",
-        password:     formData.password    || "Staff@123",
-      };
-
-      const response = await fetch(API_URL, {
+      const formDataToSend = new FormData();
+      
+      // Add text fields - EXACTLY matching backend expected fields
+      formDataToSend.append('employeeId', formData.employeeId.trim());
+      formDataToSend.append('employeeName', formData.employeeName.trim());
+      formDataToSend.append('role', formData.role);
+      formDataToSend.append('mobile', formData.mobile.trim());
+      formDataToSend.append('email', formData.email.trim());
+      formDataToSend.append('joiningDate', formData.joiningDate || new Date().toISOString());
+      formDataToSend.append('bloodGroup', formData.bloodGroup || 'Unknown');
+      formDataToSend.append('password', formData.password);
+      
+      // Add address as JSON string if any field has value
+      const hasAddress = formData.address.street || formData.address.city || 
+                        formData.address.state || formData.address.pincode;
+      if (hasAddress) {
+        formDataToSend.append('address', JSON.stringify(formData.address));
+      }
+      
+      // Add emergency contact as JSON string if any field has value
+      const hasEmergency = formData.emergencyContact.name || 
+                          formData.emergencyContact.relation || 
+                          formData.emergencyContact.mobile;
+      if (hasEmergency) {
+        formDataToSend.append('emergencyContact', JSON.stringify(formData.emergencyContact));
+      }
+      
+      // Add files
+      if (profileImage) {
+        formDataToSend.append('profileImage', profileImage);
+      }
+      if (idCardImage) {
+        formDataToSend.append('idCardImage', idCardImage);
+      }
+      
+      // Add documents
+      let docCounter = 0;
+      for (const [docType, files] of Object.entries(documents)) {
+        files.forEach((file) => {
+          formDataToSend.append('documents', file);
+          formDataToSend.append(`documentType_${docCounter}`, docType);
+          docCounter++;
+        });
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${AUTH_TOKEN}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: formDataToSend,
       });
 
       const json = await response.json();
 
       if (response.ok && json.success !== false) {
-        showToast("success","Employee added successfully!");
+        showToast("success", `Employee ${json.data.employeeId} added successfully!`);
         setTimeout(() => navigate("/staff"), 1800);
       } else {
         const errMsg = json.errors
@@ -133,14 +255,43 @@ const AddStaff = () => {
           : json.message || json.error || "Failed to add employee. Please try again.";
         showToast("error", errMsg);
       }
-    } catch {
-      showToast("error","Network error. Please check your connection.");
+    } catch (error) {
+      console.error('Submit error:', error);
+      showToast("error", "Network error. Please check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ─────────────────────────── RENDER ─────────────────────────── */
+  if (loadingData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader size={40} className="spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading roles and blood groups...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center bg-red-50 p-8 rounded-xl max-w-md">
+          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-700 mb-2">Failed to Load Data</h2>
+          <p className="text-gray-600 mb-4">Unable to fetch roles and blood groups from the server.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50/90 via-white to-teal-100/80">
       <style>{`
@@ -215,7 +366,6 @@ const AddStaff = () => {
         }
         .fade-up { animation:fadeUp .4s ease forwards; }
 
-        /* ── divider ── */
         .section-divider {
           display:flex; align-items:center; gap:12px;
           margin-bottom:1.25rem;
@@ -226,7 +376,6 @@ const AddStaff = () => {
         }
       `}</style>
 
-      {/* ── TOAST ── */}
       {toast && (
         <div className={`toast-in fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-4 rounded-2xl shadow-2xl font-semibold text-sm max-w-[calc(100vw-2rem)] sm:max-w-sm ${
           toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
@@ -242,8 +391,6 @@ const AddStaff = () => {
       )}
 
       <div className="w-full max-w-5xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
-
-        {/* ── HEADER ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-8 fade-up">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30 shrink-0">
@@ -267,10 +414,7 @@ const AddStaff = () => {
           </button>
         </div>
 
-        {/* ── MAIN CARD ── */}
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 fade-up">
-
-          {/* ── IMAGE UPLOADS ── */}
           <div className="section-divider">
             <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
               Photos
@@ -291,7 +435,6 @@ const AddStaff = () => {
             />
           </div>
 
-          {/* ── FORM ── */}
           <form onSubmit={handleSubmit}>
             <div className="section-divider">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
@@ -300,17 +443,58 @@ const AddStaff = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 lg:gap-5 mb-6 sm:mb-8">
-              <FInput label="Employee ID"   icon={<User size={14}/>} name="employeeId"   value={formData.employeeId}   onChange={handleChange} placeholder="e.g. PMS22022513" required />
-              <FInput label="Employee Name" icon={<User size={14}/>} name="employeeName" value={formData.employeeName} onChange={handleChange} placeholder="e.g. Ravi Kumar"   required />
-              <FSelect label="Role"         icon={<Briefcase size={14}/>} name="role"     value={formData.role}         onChange={handleChange} options={roles}       required />
-              <FInput  label="Mobile"       icon={<Phone size={14}/>}     name="mobile"   value={formData.mobile}       onChange={handleChange} placeholder="10-digit number" maxLength={10} required />
-              <FInput  label="Email"        icon={<Mail size={14}/>}      name="email"    value={formData.email}        onChange={handleChange} type="email" placeholder="e.g. ravi@gmail.com" required />
-              <FInput  label="Joining Date" icon={<Calendar size={14}/>}  name="joiningDate" value={formData.joiningDate} onChange={handleChange} type="date" required />
-              <FSelect label="Blood Group"  icon={<Droplet size={14}/>}   name="bloodGroup"  value={formData.bloodGroup}  onChange={handleChange} options={bloodGroups} />
-              <FInput  label="Password"     icon={<Lock size={14}/>}      name="password" value={formData.password}     onChange={handleChange} type="password" placeholder="Min 6 chars" required />
+              <FInput label="Employee ID" icon={<User size={14}/>} name="employeeId" value={formData.employeeId} onChange={handleChange} placeholder="e.g. EMP001" required />
+              <FInput label="Employee Name" icon={<User size={14}/>} name="employeeName" value={formData.employeeName} onChange={handleChange} placeholder="e.g. John Doe" required />
+              <FSelect label="Role" icon={<Briefcase size={14}/>} name="role" value={formData.role} onChange={handleChange} options={roles} required />
+              <FInput label="Mobile" icon={<Phone size={14}/>} name="mobile" value={formData.mobile} onChange={handleChange} placeholder="10-digit number" maxLength={10} required />
+              <FInput label="Email" icon={<Mail size={14}/>} name="email" value={formData.email} onChange={handleChange} type="email" placeholder="john@example.com" required />
+              <FInput label="Joining Date" icon={<Calendar size={14}/>} name="joiningDate" value={formData.joiningDate} onChange={handleChange} type="date" required />
+              <FSelect label="Blood Group" icon={<Droplet size={14}/>} name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={bloodGroups} />
+              <FInput label="Password" icon={<Lock size={14}/>} name="password" value={formData.password} onChange={handleChange} type="password" placeholder="Min 6 chars" required />
             </div>
 
-            {/* ── DOCUMENTS ── */}
+            {/* Address Section */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setShowAddress(!showAddress)}
+                className="flex items-center gap-2 text-teal-600 font-semibold mb-3 hover:text-teal-700"
+              >
+                <ChevronDown className={`transform transition-transform ${showAddress ? 'rotate-180' : ''}`} size={16} />
+                {showAddress ? 'Hide' : 'Show'} Address Details
+              </button>
+              
+              {showAddress && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 p-4 bg-gray-50 rounded-xl">
+                  <FInput label="Street" name="address.street" value={formData.address.street} onChange={handleChange} placeholder="Street address" />
+                  <FInput label="City" name="address.city" value={formData.address.city} onChange={handleChange} placeholder="City" />
+                  <FInput label="State" name="address.state" value={formData.address.state} onChange={handleChange} placeholder="State" />
+                  <FInput label="Pincode" name="address.pincode" value={formData.address.pincode} onChange={handleChange} placeholder="Pincode" />
+                  <FInput label="Country" name="address.country" value={formData.address.country} onChange={handleChange} placeholder="Country" />
+                </div>
+              )}
+            </div>
+
+            {/* Emergency Contact Section */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setShowEmergency(!showEmergency)}
+                className="flex items-center gap-2 text-teal-600 font-semibold mb-3 hover:text-teal-700"
+              >
+                <ChevronDown className={`transform transition-transform ${showEmergency ? 'rotate-180' : ''}`} size={16} />
+                {showEmergency ? 'Hide' : 'Show'} Emergency Contact
+              </button>
+              
+              {showEmergency && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 p-4 bg-gray-50 rounded-xl">
+                  <FInput label="Contact Name" name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} placeholder="Emergency contact name" />
+                  <FInput label="Relation" name="emergencyContact.relation" value={formData.emergencyContact.relation} onChange={handleChange} placeholder="Relation" />
+                  <FInput label="Mobile" name="emergencyContact.mobile" value={formData.emergencyContact.mobile} onChange={handleChange} placeholder="Emergency mobile number" />
+                </div>
+              )}
+            </div>
+
             <div className="section-divider">
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">
                 Documents
@@ -337,7 +521,6 @@ const AddStaff = () => {
               ))}
             </div>
 
-            {/* ── SUBMIT ── */}
             <button
               type="submit"
               disabled={loading}
@@ -356,8 +539,7 @@ const AddStaff = () => {
   );
 };
 
-/* ──────────────────────── SUB-COMPONENTS ──────────────────────── */
-
+// Sub-components remain the same
 const ImageUpload = ({ title, preview, onChange, icon }) => (
   <div>
     <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">

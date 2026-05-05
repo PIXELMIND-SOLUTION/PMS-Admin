@@ -23,7 +23,9 @@ import {
   MdGridView,
 } from "react-icons/md";
 
-const API_URL = "http://31.97.228.17:5000/api/staff";
+import { useLocation } from "react-router-dom";
+
+const API_BASE_URL = "http://localhost:5000/api/staff";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
@@ -41,32 +43,48 @@ const Staff = () => {
   const [viewMode, setViewMode] = useState("card");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
+  const { state } = useLocation();
+
+  useEffect(() => {
+    fetchStaff();
+  }, [state?.refresh]);
+
+  // Fetch staff from backend
   const fetchStaff = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_BASE_URL}/all`, {
         headers: {
           Authorization: `Bearer ${AUTH_TOKEN}`,
           "Content-Type": "application/json",
         },
       });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const json = await response.json();
+      
       if (json.success && Array.isArray(json.data)) {
         setStaffList(json.data);
       } else {
         throw new Error("Invalid response format");
       }
     } catch (err) {
+      console.error("Fetch error:", err);
       setError(err.message || "Failed to fetch staff data");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchStaff(); }, []);
+  useEffect(() => { 
+    fetchStaff(); 
+  }, []);
 
+  // Statistics calculation
   const stats = useMemo(() => {
     const total = staffList.length;
     const active = staffList.filter((s) => s.isActive).length;
@@ -75,6 +93,7 @@ const Staff = () => {
     return { total, active, inactive, uniqueRoles };
   }, [staffList]);
 
+  // Filter staff based on search, role, and status
   const filtered = useMemo(() => {
     return staffList.filter((s) => {
       const matchSearch =
@@ -96,21 +115,31 @@ const Staff = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-  useEffect(() => { setCurrentPage(1); }, [search, roleFilter, statusFilter, itemsPerPage]);
+  useEffect(() => { 
+    setCurrentPage(1); 
+  }, [search, roleFilter, statusFilter, itemsPerPage]);
 
-  const handleDelete = async (id) => {
+  // Delete staff by employeeId
+  const handleDelete = async (employeeId, employeeName) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/${employeeId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+        headers: { 
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          "Content-Type": "application/json"
+        },
       });
+      
       if (response.ok) {
-        setStaffList((prev) => prev.filter((s) => s._id !== id));
+        setStaffList((prev) => prev.filter((s) => s.employeeId !== employeeId));
+        alert(`Employee ${employeeName} deleted successfully`);
       } else {
-        alert("Failed to delete employee.");
+        const data = await response.json();
+        alert(data.message || "Failed to delete employee.");
       }
-    } catch {
-      setStaffList((prev) => prev.filter((s) => s._id !== id));
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Network error while deleting");
     } finally {
       setDeleteConfirm(null);
     }
@@ -160,12 +189,11 @@ const Staff = () => {
         .scroll-x::-webkit-scrollbar-track { background:#f0fdf4; }
         .scroll-x::-webkit-scrollbar-thumb { background:#99f6e4; border-radius:4px; }
 
-        /* Responsive column hiding */
         @media(max-width:600px){ .h-sm{ display:none!important; } }
         @media(max-width:420px){ .h-xs{ display:none!important; } }
       `}</style>
 
-      {/* ── DELETE MODAL ── */}
+      {/* DELETE MODAL */}
       {deleteConfirm && (
         <div className="modal-back">
           <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl fade-up">
@@ -181,7 +209,7 @@ const Staff = () => {
                 className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 text-sm">
                 Cancel
               </button>
-              <button onClick={() => handleDelete(deleteConfirm.id)}
+              <button onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)}
                 className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm">
                 Delete
               </button>
@@ -192,7 +220,7 @@ const Staff = () => {
 
       <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
 
-        {/* ── HEADER ── */}
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30 shrink-0">
@@ -215,7 +243,7 @@ const Staff = () => {
           </Link>
         </div>
 
-        {/* ── STAT CARDS ── */}
+        {/* STAT CARDS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4 mb-5 sm:mb-6">
           {[
             { label: "Total Staff",  value: stats.total,       icon: "👥", badge: "bg-teal-100 text-teal-700",    dot: "bg-teal-400" },
@@ -236,7 +264,7 @@ const Staff = () => {
           ))}
         </div>
 
-        {/* ── FILTER BAR ── */}
+        {/* FILTER BAR */}
         <div className="premium-card rounded-2xl p-3.5 sm:p-4 lg:p-5 mb-5 sm:mb-6">
           <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -271,7 +299,6 @@ const Staff = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* Search spans full width on mobile, 2 cols on sm */}
             <div className="relative sm:col-span-2 lg:col-span-1">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
               <input className="s-input w-full h-10 pl-8 pr-3 rounded-xl border-2 border-gray-100 bg-white focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all text-xs sm:text-sm text-gray-700 placeholder:text-gray-400"
@@ -314,7 +341,7 @@ const Staff = () => {
           </div>
         </div>
 
-        {/* ── LOADING ── */}
+        {/* LOADING */}
         {loading && (
           <div className="premium-card rounded-2xl p-12 sm:p-16 flex flex-col items-center justify-center gap-4">
             <div className="spinner" />
@@ -322,7 +349,7 @@ const Staff = () => {
           </div>
         )}
 
-        {/* ── ERROR ── */}
+        {/* ERROR */}
         {!loading && error && (
           <div className="premium-card rounded-2xl p-10 flex flex-col items-center gap-4 text-center">
             <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
@@ -339,7 +366,7 @@ const Staff = () => {
           </div>
         )}
 
-        {/* ── TABLE VIEW ── */}
+        {/* TABLE VIEW */}
         {!loading && !error && viewMode === "table" && (
           <div className="premium-card rounded-2xl overflow-hidden">
             <div className="overflow-x-auto scroll-x">
@@ -381,7 +408,6 @@ const Staff = () => {
                             <p className="text-xs text-gray-400 truncate" style={{ maxWidth: "clamp(80px,18vw,180px)" }}>
                               {staff.email}
                             </p>
-                            {/* Mobile-only inline role + status */}
                             <div className="flex items-center gap-1.5 mt-0.5 sm:hidden flex-wrap">
                               <span className="text-xs text-teal-600 font-semibold truncate" style={{ maxWidth: 80 }}>{staff.role}</span>
                               <span className={`status-pill text-xs ${staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
@@ -396,29 +422,32 @@ const Staff = () => {
                         <span className="px-2 py-1 bg-teal-50 text-teal-700 rounded-lg text-xs font-semibold border border-teal-100 whitespace-nowrap">
                           {staff.role}
                         </span>
-                      </td>
+                       </td>
                       <td className="h-sm py-3 px-3 sm:px-4">
                         <span className={`status-pill ${staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${staff.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
                           {staff.isActive ? "Active" : "Inactive"}
                         </span>
-                      </td>
+                       </td>
                       <td className="py-3 px-3 sm:px-4">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => navigate(`/staff/${staff._id}`)}
+                          <button onClick={() => navigate(`/staff/${staff.employeeId}`)}
                             className="btn-act bg-teal-50 hover:bg-teal-100 text-teal-600" title="View">
                             <MdRemoveRedEye size={15} />
                           </button>
-                          <button onClick={() => navigate(`/staff/edit/${staff._id}`)}
-                            className="btn-act bg-blue-50 hover:bg-blue-100 text-blue-600" title="Edit">
+                          <button 
+                            onClick={() => navigate(`/staff/edit/${staff.employeeId}`)}  // ✅ Use employeeId
+                            className="btn-act bg-blue-50 hover:bg-blue-100 text-blue-600" 
+                            title="Edit"
+                          >
                             <MdEdit size={15} />
                           </button>
-                          <button onClick={() => setDeleteConfirm({ id: staff._id, name: staff.employeeName })}
+                          <button onClick={() => setDeleteConfirm({ id: staff.employeeId, name: staff.employeeName })}
                             className="btn-act bg-red-50 hover:bg-red-100 text-red-500" title="Delete">
                             <MdDelete size={15} />
                           </button>
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   )) : (
                     <tr>
@@ -431,11 +460,11 @@ const Staff = () => {
                             Add First Employee
                           </button>
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   )}
                 </tbody>
-              </table>
+               </table>
             </div>
             {totalPages > 1 && (
               <Pagination totalPages={totalPages} currentPage={currentPage} setCurrentPage={setCurrentPage}
@@ -444,7 +473,7 @@ const Staff = () => {
           </div>
         )}
 
-        {/* ── CARD VIEW ── */}
+        {/* CARD VIEW */}
         {!loading && !error && viewMode === "card" && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -453,7 +482,6 @@ const Staff = () => {
                   className="premium-card rounded-2xl p-4 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 fade-up flex flex-col"
                   style={{ animationDelay: `${index * 35}ms` }}>
 
-                  {/* Top */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {staff.profileImage && !staff.profileImage.startsWith("/data/user") ? (
@@ -475,7 +503,6 @@ const Staff = () => {
                     </span>
                   </div>
 
-                  {/* Details */}
                   <div className="space-y-1.5 py-3 border-t border-b border-gray-100 flex-1">
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <FaIdCard className="text-gray-300 shrink-0" size={11} />
@@ -499,17 +526,18 @@ const Staff = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-1.5 mt-3">
-                    <button onClick={() => navigate(`/staff/${staff._id}`)}
+                    <button onClick={() => navigate(`/staff/${staff.employeeId}`)}
                       className="btn-act flex-1 w-auto h-8 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-600">
                       <MdRemoveRedEye size={14} />
                     </button>
-                    <button onClick={() => navigate(`/staff/edit/${staff._id}`)}
-                      className="btn-act flex-1 w-auto h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600">
+                    <button 
+                      onClick={() => navigate(`/staff/edit/${staff.employeeId}`)}  // ✅ Use employeeId
+                      className="btn-act flex-1 w-auto h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600"
+                    >
                       <MdEdit size={14} />
                     </button>
-                    <button onClick={() => setDeleteConfirm({ id: staff._id, name: staff.employeeName })}
+                    <button onClick={() => setDeleteConfirm({ id: staff.employeeId, name: staff.employeeName })}
                       className="btn-act flex-1 w-auto h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500">
                       <MdDelete size={14} />
                     </button>
@@ -541,7 +569,7 @@ const Staff = () => {
   );
 };
 
-/* ── PAGINATION ── */
+/* PAGINATION COMPONENT */
 const Pagination = ({ totalPages, currentPage, setCurrentPage, startIndex, itemsPerPage, filteredLength }) => {
   const pages = [];
   for (let i = 1; i <= totalPages; i++) {
