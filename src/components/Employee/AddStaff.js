@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api/staff";
+
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
