@@ -7,18 +7,48 @@ const EditWorksheet = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState({ empId: "", employName: "", sheet: "frontend", projects: [] });
+  const [formData, setFormData] = useState({ 
+    empId: "", 
+    employName: "", 
+    sheet: "frontend", 
+    projects: [] 
+  });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [projectOptions, setProjectOptions] = useState([]);
 
-  useEffect(() => { fetchAssignment(); }, [id]);
+  // Fetch project options for dropdown
+  useEffect(() => {
+    const fetchProjectOptions = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/worksheets/project-options`, { 
+          headers: getAuthHeaders() 
+        });
+        const data = await res.json();
+        if (data.success) {
+          setProjectOptions(data.data);
+        }
+      } catch (err) {
+        console.error("Fetch project options error:", err);
+      }
+    };
+    fetchProjectOptions();
+  }, []);
+
+  // Fetch worksheet data
+  useEffect(() => { 
+    fetchAssignment(); 
+  }, [id]);
 
   const fetchAssignment = async () => {
     try {
-      const res = await fetch(`${API_BASE}/worksheets/${id}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_BASE}/worksheets/${id}`, { 
+        headers: getAuthHeaders() 
+      });
       const data = await res.json();
+      
       if (data.success) {
         // Format dates for input fields
         const formatted = {
@@ -27,6 +57,7 @@ const EditWorksheet = () => {
             ...p,
             startDate: p.startDate?.split("T")[0] || "",
             endDate: p.endDate?.split("T")[0] || "",
+            hours: p.hours || "",
           })) || [],
         };
         setFormData(formatted);
@@ -52,7 +83,14 @@ const EditWorksheet = () => {
   const addProject = () => {
     setFormData((prev) => ({
       ...prev,
-      projects: [...prev.projects, { projectName: "", startDate: "", endDate: "", comment: "", hours: "", shift: "morning" }],
+      projects: [...prev.projects, { 
+        projectName: "", 
+        startDate: "", 
+        endDate: "", 
+        comment: "", 
+        hours: "", 
+        shift: "morning" 
+      }],
     }));
   };
 
@@ -62,18 +100,72 @@ const EditWorksheet = () => {
     setFormData((prev) => ({ ...prev, projects: updated }));
   };
 
+  // Validation
+  const validateForm = () => {
+    if (!formData.sheet) {
+      setError("Please select a sheet type");
+      return false;
+    }
+    
+    for (const project of formData.projects) {
+      if (!project.projectName) {
+        setError("Please select a project name for all assignments");
+        return false;
+      }
+      if (!project.startDate) {
+        setError("Please enter start date for all projects");
+        return false;
+      }
+      if (!project.endDate) {
+        setError("Please enter end date for all projects");
+        return false;
+      }
+      if (!project.hours) {
+        setError("Please enter hours for all projects");
+        return false;
+      }
+      if (project.startDate && project.endDate && new Date(project.endDate) < new Date(project.startDate)) {
+        setError(`End date must be after start date for project: ${project.projectName}`);
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setSubmitting(true);
     setError("");
     setSuccess("");
 
     try {
+      // Prepare payload
+      const payload = {
+        empId: formData.empId,
+        employName: formData.employName,
+        sheet: formData.sheet,
+        projects: formData.projects.map(project => ({
+          projectName: project.projectName,
+          startDate: project.startDate,
+          endDate: project.endDate,
+          hours: parseInt(project.hours, 10),
+          shift: project.shift,
+          comment: project.comment || ""
+        }))
+      };
+
+      console.log("📤 Updating worksheet:", payload);
+
       const res = await fetch(`${API_BASE}/worksheets/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
+      
       const data = await res.json();
       
       if (data.success) {
@@ -145,11 +237,19 @@ const EditWorksheet = () => {
             <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Employee ID</label>
-                <input value={formData.empId} readOnly className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-slate-50/80 text-slate-600 cursor-not-allowed" />
+                <input 
+                  value={formData.empId} 
+                  readOnly 
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-slate-50/80 text-slate-600 cursor-not-allowed" 
+                />
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Employee Name</label>
-                <input value={formData.employName} readOnly className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-slate-50/80 text-slate-600 cursor-not-allowed" />
+                <input 
+                  value={formData.employName} 
+                  readOnly 
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-slate-50/80 text-slate-600 cursor-not-allowed" 
+                />
               </div>
             </div>
           </section>
@@ -157,7 +257,13 @@ const EditWorksheet = () => {
           {/* SHEET TYPE */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-slate-700">Sheet Type</label>
-            <select name="sheet" value={formData.sheet} onChange={handleMainChange} disabled={submitting} className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50">
+            <select 
+              name="sheet" 
+              value={formData.sheet} 
+              onChange={handleMainChange} 
+              disabled={submitting} 
+              className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50"
+            >
               <option value="frontend">Frontend Development</option>
               <option value="backend">Backend Development</option>
               <option value="testing">QA & Testing</option>
@@ -174,42 +280,123 @@ const EditWorksheet = () => {
                 <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-teal-500 to-emerald-600" />
                 Project Assignments
               </h2>
-              <button type="button" onClick={addProject} disabled={submitting} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border-2 border-dashed border-teal-300 text-teal-700 hover:bg-teal-50/60 transition-all disabled:opacity-50">
+              <button 
+                type="button" 
+                onClick={addProject} 
+                disabled={submitting} 
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border-2 border-dashed border-teal-300 text-teal-700 hover:bg-teal-50/60 transition-all disabled:opacity-50"
+              >
                 <Plus size={16} /> Add Project
               </button>
             </div>
 
             <div className="space-y-4">
               {formData.projects?.map((project, index) => (
-                <div key={index} className="group relative p-4 md:p-6 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50/50 to-white/30">
+                <div 
+                  key={index} 
+                  className="group relative p-4 md:p-6 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50/50 to-white/30"
+                >
                   {formData.projects.length > 1 && (
-                    <button type="button" onClick={() => removeProject(index)} disabled={submitting} className="absolute top-3 right-3 p-2 rounded-xl text-red-500 hover:bg-red-50 transition-all disabled:opacity-50 opacity-0 group-hover:opacity-100">
+                    <button 
+                      type="button" 
+                      onClick={() => removeProject(index)} 
+                      disabled={submitting} 
+                      className="absolute top-3 right-3 p-2 rounded-xl text-red-500 hover:bg-red-50 transition-all disabled:opacity-50 opacity-0 group-hover:opacity-100"
+                    >
                       <Trash2 size={16} />
                     </button>
                   )}
+                  
                   <div className="mb-4 pb-3 border-b border-slate-100">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Project #{index + 1}</span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Project #{index + 1}
+                    </span>
                   </div>
+
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="sm:col-span-2 space-y-2">
+                    {/* Project Name */}
+                    <div className="sm:col-span-2 lg:col-span-1 space-y-2">
                       <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Project Name</label>
-                      <input value={project.projectName} onChange={(e) => handleProjectChange(index, "projectName", e.target.value)} disabled={submitting} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" />
+                      <select
+                        value={project.projectName}
+                        onChange={(e) => handleProjectChange(index, "projectName", e.target.value)}
+                        required
+                        disabled={submitting}
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm"
+                      >
+                        <option value="">Select project</option>
+                        {projectOptions.map((p) => (
+                          <option key={p.id} value={p.projectName}>
+                            {p.projectName}
+                          </option>
+                        ))}
+                      </select>
                     </div>
+
+                    {/* Shift */}
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Shift</label>
-                      <select value={project.shift} onChange={(e) => handleProjectChange(index, "shift", e.target.value)} disabled={submitting} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm">
+                      <select 
+                        value={project.shift} 
+                        onChange={(e) => handleProjectChange(index, "shift", e.target.value)} 
+                        disabled={submitting} 
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm"
+                      >
                         <option value="morning">Morning</option>
                         <option value="afternoon">Afternoon</option>
                         <option value="fullday">Full Day</option>
                       </select>
                     </div>
-                    <div className="space-y-2"><label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Start</label><input type="date" value={project.startDate} onChange={(e) => handleProjectChange(index, "startDate", e.target.value)} disabled={submitting} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" /></div>
-                    <div className="space-y-2"><label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">End</label><input type="date" value={project.endDate} onChange={(e) => handleProjectChange(index, "endDate", e.target.value)} disabled={submitting} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" /></div>
-                    <div className="space-y-2"><label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Hours</label><input type="number" value={project.hours} onChange={(e) => handleProjectChange(index, "hours", e.target.value)} disabled={submitting} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" /></div>
+
+                    {/* Dates & Hours */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Start Date</label>
+                      <input 
+                        type="date" 
+                        value={project.startDate} 
+                        onChange={(e) => handleProjectChange(index, "startDate", e.target.value)} 
+                        required 
+                        disabled={submitting} 
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">End Date</label>
+                      <input 
+                        type="date" 
+                        value={project.endDate} 
+                        onChange={(e) => handleProjectChange(index, "endDate", e.target.value)} 
+                        required 
+                        disabled={submitting} 
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Hours</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={project.hours} 
+                        onChange={(e) => handleProjectChange(index, "hours", e.target.value)} 
+                        required 
+                        disabled={submitting} 
+                        placeholder="e.g., 40"
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
+                    </div>
                   </div>
+
+                  {/* Comment */}
                   <div className="mt-4 space-y-2">
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Comment</label>
-                    <textarea rows={2} value={project.comment} onChange={(e) => handleProjectChange(index, "comment", e.target.value)} disabled={submitting} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm resize-none" />
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Comment (Optional)</label>
+                    <textarea 
+                      rows={2} 
+                      value={project.comment} 
+                      onChange={(e) => handleProjectChange(index, "comment", e.target.value)} 
+                      disabled={submitting} 
+                      placeholder="Add notes about this assignment..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm resize-none" 
+                    />
                   </div>
                 </div>
               ))}
@@ -218,8 +405,19 @@ const EditWorksheet = () => {
 
           {/* BUTTONS */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-slate-100">
-            <button type="button" onClick={() => navigate("/assigned-works")} disabled={submitting} className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all disabled:opacity-50">Cancel</button>
-            <button type="submit" disabled={submitting} className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+            <button 
+              type="button" 
+              onClick={() => navigate("/assigned-works")} 
+              disabled={submitting} 
+              className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={submitting} 
+              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            >
               {submitting ? <><Loader2 className="animate-spin" size={18} /> Updating...</> : "Update Worksheet"}
             </button>
           </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardPlus, Plus, Trash2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { getAuthHeaders, API_BASE } from "../../utils/Auth";
+import { getAuthHeaders, API_BASE_URL } from "../../utils/Auth";
+
+const API = "http://localhost:5000/api/projects";
 
 const AddWorksheet = () => {
   const navigate = useNavigate();
@@ -24,8 +26,8 @@ const AddWorksheet = () => {
     const fetchOptions = async () => {
       try {
         const [staffRes, projectRes] = await Promise.all([
-          fetch(`${API_BASE}/worksheets/staff-options`, { headers: getAuthHeaders() }),
-          fetch(`${API_BASE}/worksheets/project-options`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE_URL}/staff-options`, { headers: getAuthHeaders() }),
+          fetch(`${API}/options`, { headers: getAuthHeaders() }),
         ]);
 
         const staffData = await staffRes.json();
@@ -74,24 +76,65 @@ const AddWorksheet = () => {
     setFormData({ ...formData, projects: formData.projects.filter((_, x) => x !== i) });
   };
 
+  /* ---------------- VALIDATION ---------------- */
+  const validateForm = () => {
+    if (!formData.empId) {
+      setError("Please select an employee");
+      return false;
+    }
+    
+    if (formData.projects.some((p) => !p.projectName || !p.startDate || !p.endDate || !p.hours)) {
+      setError("Please fill all required project fields (Project Name, Start Date, End Date, Hours)");
+      return false;
+    }
+    
+    // Validate dates
+    for (const project of formData.projects) {
+      if (project.startDate && project.endDate && new Date(project.endDate) < new Date(project.startDate)) {
+        setError(`End date must be after start date for project: ${project.projectName}`);
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.projects.some((p) => !p.projectName || !p.startDate || !p.endDate || !p.hours)) {
-      setError("Please fill all required project fields");
-      return;
-    }
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     setError("");
     setSuccess("");
     
     try {
-      const res = await fetch(`${API_BASE}/worksheets`, {
+      // Prepare payload exactly as backend expects
+      const payload = {
+        empId: formData.empId,
+        employName: formData.employName,
+        sheet: formData.sheet,
+        projects: formData.projects.map(project => ({
+          projectName: project.projectName,
+          startDate: project.startDate,
+          endDate: project.endDate,
+          hours: parseInt(project.hours, 10),
+          shift: project.shift,
+          comment: project.comment || ""
+        }))
+      };
+      
+      console.log("📤 Sending payload:", payload);
+      
+      const response = await fetch(`${API_BASE_URL}/`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      
+      const data = await response.json();
+      console.log("📥 Response:", data);
       
       if (data.success) {
         setSuccess("✨ Worksheet created successfully!");
@@ -171,7 +214,7 @@ const AddWorksheet = () => {
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Select Employee</label>
                 <select
-                  value={formData.staffId}
+                  value={formData.empId ? staffOptions.find(s => s.staffId === formData.empId)?.id : ""}
                   onChange={handleEmployeeSelect}
                   required
                   disabled={loading}
@@ -299,16 +342,39 @@ const AddWorksheet = () => {
 
                     {/* Dates & Hours */}
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Start</label>
-                      <input type="date" value={project.startDate} onChange={(e) => handleProjectChange(i, "startDate", e.target.value)} required disabled={loading} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" />
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Start Date</label>
+                      <input 
+                        type="date" 
+                        value={project.startDate} 
+                        onChange={(e) => handleProjectChange(i, "startDate", e.target.value)} 
+                        required 
+                        disabled={loading} 
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">End</label>
-                      <input type="date" value={project.endDate} onChange={(e) => handleProjectChange(i, "endDate", e.target.value)} required disabled={loading} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" />
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">End Date</label>
+                      <input 
+                        type="date" 
+                        value={project.endDate} 
+                        onChange={(e) => handleProjectChange(i, "endDate", e.target.value)} 
+                        required 
+                        disabled={loading} 
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Hours</label>
-                      <input type="number" min="1" value={project.hours} onChange={(e) => handleProjectChange(i, "hours", e.target.value)} required disabled={loading} className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" />
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={project.hours} 
+                        onChange={(e) => handleProjectChange(i, "hours", e.target.value)} 
+                        required 
+                        disabled={loading} 
+                        placeholder="e.g., 40"
+                        className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm" 
+                      />
                     </div>
                   </div>
 

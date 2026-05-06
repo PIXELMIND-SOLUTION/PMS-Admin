@@ -24,6 +24,9 @@ import ShowPayslips from './components/Payslips/ShowPayslips';
 import StaffDetails from './components/Employee/SingleStaff';
 import ProjectDetails from './components/Projects/SingleProject';
 import AdvancedInvoice from './components/Invoice/AdvaceInvoiceGenerator';
+import WorkSessionLive from './components/WorkSession/WorkSessionLive';
+import WorkSessionHistory from './components/WorkSession/WorkSessionHistory';
+import WorkSessionReports from './components/WorkSession/WorkSessionReports';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -64,6 +67,9 @@ function App() {
         <Route path="edit-worksheet/:id" element={<EditWorksheet />} />
         <Route path="add-attendance" element={<AddAttendance />} />
         <Route path="attendance" element={<ShowAttendance />} />
+        <Route path="work-session-live" element={<WorkSessionLive />} />
+        <Route path="work-session-history" element={<WorkSessionHistory />} />
+        <Route path="work-session-reports" element={<WorkSessionReports />} />
         <Route path="create-invoice" element={<CreateInvoice />} />
         <Route path="invoices" element={<ShowInvoices />} />
         <Route path="invoices1" element={<AdvancedInvoice />} />
