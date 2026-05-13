@@ -22,28 +22,80 @@ const AddWorksheet = () => {
   });
 
   /* ---------------- FETCH OPTIONS ---------------- */
+  // useEffect(() => {
+  //   const fetchOptions = async () => {
+  //     try {
+  //       const [staffRes, projectRes] = await Promise.all([
+  //         fetch(`${API_BASE_URL}/staff/options`, { headers: getAuthHeaders() }),
+  //         fetch(`${API}/options`, { headers: getAuthHeaders() }),
+  //       ]);
+
+  //       const staffData = await staffRes.json();
+  //       const projectData = await projectRes.json();
+
+  //       if (staffData.success) setStaffOptions(staffData.data);
+  //       if (projectData.success) setProjectOptions(projectData.data);
+  //     } catch (err) {
+  //       console.error("Fetch options error:", err);
+  //       setError("Failed to load dropdown data. Please check your connection.");
+  //     } finally {
+  //       setFetchingOptions(false);
+  //     }
+  //   };
+  //   fetchOptions();
+  // }, []);
+
   useEffect(() => {
     const fetchOptions = async () => {
       try {
+        console.log("📡 Fetching staff options from:", `${API_BASE_URL}/staff/options`);
+        console.log("📡 Fetching project options from:", `${API}/options`);
+        
         const [staffRes, projectRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/staff-options`, { headers: getAuthHeaders() }),
-          fetch(`${API}/options`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE_URL}/staff/options`, { 
+            method: "GET",
+            headers: getAuthHeaders() 
+          }),
+          fetch(`${API}/options`, { 
+            method: "GET",
+            headers: getAuthHeaders() 
+          }),
         ]);
+
+        console.log("📡 Staff response status:", staffRes.status);
+        console.log("📡 Project response status:", projectRes.status);
 
         const staffData = await staffRes.json();
         const projectData = await projectRes.json();
 
-        if (staffData.success) setStaffOptions(staffData.data);
-        if (projectData.success) setProjectOptions(projectData.data);
+        console.log("📡 Staff data:", staffData);
+        console.log("📡 Project data:", projectData);
+
+        if (staffData.success) {
+          // Format staff data for dropdown
+          const formattedStaff = staffData.data.map(staff => ({
+            id: staff.employeeId,
+            staffId: staff.employeeId,
+            staffName: staff.employeeName
+          }));
+          setStaffOptions(formattedStaff);
+        }
+        
+        if (projectData.success) {
+          setProjectOptions(projectData.data);
+        }
       } catch (err) {
-        console.error("Fetch options error:", err);
+        console.error("❌ Fetch options error:", err);
         setError("Failed to load dropdown data. Please check your connection.");
       } finally {
         setFetchingOptions(false);
       }
     };
+    
     fetchOptions();
   }, []);
+
+
 
   /* ---------------- HANDLERS ---------------- */
   const handleMainChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -221,8 +273,8 @@ const AddWorksheet = () => {
                   className="w-full h-12 px-4 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-slate-300"
                 >
                   <option value="">Choose an employee</option>
-                  {staffOptions.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
+                  {staffOptions.map((staff, index) => (
+                    <option key={staff.id || staff.staffId || index} value={staff.id}>
                       {staff.staffId} — {staff.staffName}
                     </option>
                   ))}
@@ -317,8 +369,8 @@ const AddWorksheet = () => {
                         className="w-full h-11 px-3 border border-slate-200 rounded-xl bg-white/50 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all disabled:opacity-50 text-sm"
                       >
                         <option value="">Select project</option>
-                        {projectOptions.map((p) => (
-                          <option key={p.id} value={p.projectName}>
+                        {projectOptions.map((p, index) => (
+                          <option key={p.id || p.projectName || index} value={p.projectName}>
                             {p.projectName}
                           </option>
                         ))}

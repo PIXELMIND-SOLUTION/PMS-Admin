@@ -377,7 +377,6 @@ const AddProject = () => {
   const [toast, setToast] = useState(null);
 
   const [formData, setFormData] = useState({
-    projectId: "",
     projectName: "",
     clientName: "",
     clientMobile: "",
@@ -449,7 +448,6 @@ const AddProject = () => {
     try {
       // Build payload exactly as backend expects
       const payload = {
-        projectId: formData.projectId || undefined,
         projectName: formData.projectName.trim(),
         clientName: formData.clientName.trim(),
         clientMobile: formData.clientMobile || "",
@@ -624,7 +622,6 @@ const AddProject = () => {
             <div>
               <div className="s-div"><span className="text-xs font-bold text-teal-600 tracking-widest uppercase whitespace-nowrap">👤 Client Information</span></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                <FInp name="projectId" value={formData.projectId} onChange={handleChange} placeholder="Project ID" label="Project ID" />
                 <FInp name="projectName" value={formData.projectName} onChange={handleChange} placeholder="Project Name" label="Project Name" required />
                 <FInp name="clientName" value={formData.clientName} onChange={handleChange} placeholder="Client Name" label="Client Name" required />
                 <FInp name="clientMobile" value={formData.clientMobile} onChange={handleChange} placeholder="Mobile Number" label="Client Mobile" />
