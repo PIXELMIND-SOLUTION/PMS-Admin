@@ -22,9 +22,9 @@ ChartJS.register(
 /* ──────────────────────────────────────────── */
 /*  CONFIG                                      */
 /* ──────────────────────────────────────────── */
-const STATS_API      = "https://crmbackend-oprd.onrender.com/api/attendance/stats";
-const ATTENDANCE_API = "https://crmbackend-oprd.onrender.com/api/attendance";
-const STAFF_API      = "https://crmbackend-oprd.onrender.com/api/attendance/staff";
+const STATS_API      = "https://pmsbackend.pixelmindsolutions.com/api/attendance/stats";
+const ATTENDANCE_API = "https://pmsbackend.pixelmindsolutions.com/api/attendance";
+const STAFF_API      = "https://pmsbackend.pixelmindsolutions.com/api/attendance/staff";
 
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN   = adminDetails?.token;
