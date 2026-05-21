@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL = 'https://pmsbackend.pixelmindsolutions.com/api/projects';
+const API_URL = 'https://crmbackend-oprd.onrender.com/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
 const AUTH_TOKEN = adminDetails?.token;
 

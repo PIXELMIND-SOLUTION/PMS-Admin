@@ -5,8 +5,8 @@
 //   FileText, CheckCircle, AlertCircle, Loader, ChevronDown, Search, User,
 // } from "lucide-react";
 
-// const API_URL   = "https://pmsbackend.pixelmindsolutions.com/api/projects";
-// const STAFF_URL = "https://pmsbackend.pixelmindsolutions.com/api/staff/all";
+// const API_URL   = "https://crmbackend-oprd.onrender.com/api/projects";
+// const STAFF_URL = "https://crmbackend-oprd.onrender.com/api/staff/all";
 // const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 // const AUTH_TOKEN   = adminDetails?.token;
 
@@ -658,8 +658,8 @@ import {
   FileText, CheckCircle, AlertCircle, Loader, ChevronDown, Search, User,
 } from "lucide-react";
 
-const API_URL = "https://pmsbackend.pixelmindsolutions.com/api/projects";
-const STAFF_URL = "https://pmsbackend.pixelmindsolutions.com/api/staff/all";
+const API_URL = "https://crmbackend-oprd.onrender.com/api/projects";
+const STAFF_URL = "https://crmbackend-oprd.onrender.com/api/staff/all";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
