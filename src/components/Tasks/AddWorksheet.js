@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardPlus, Plus, Trash2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { getAuthHeaders, API_BASE_URL } from "../../utils/Auth";
 
-const API = "https://pmsbackend.pixelmindsolutions.com/api/projects";
+const API = "http://localhost:5000/api/projects" || "http://localhost:5000/api/projects";
 
 const AddWorksheet = () => {
   const navigate = useNavigate();

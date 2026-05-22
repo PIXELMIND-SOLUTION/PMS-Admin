@@ -214,62 +214,64 @@ const WorkSessionLive = () => {
         </div>
 
         {/* ACTIVE EMPLOYEES LIST */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {filteredEmployees.length === 0 ? (
-            <div className="col-span-full bg-white/80 backdrop-blur-xl border border-white/60 rounded-2xl p-12 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500">No active employees found</p>
+            <div className="col-span-full bg-white/80 backdrop-blur-xl border border-white/60 rounded-2xl p-8 md:p-12 text-center">
+              <AlertCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto text-slate-300 mb-2 md:mb-3" />
+              <p className="text-slate-500 text-sm md:text-base">No active employees found</p>
             </div>
           ) : (
             filteredEmployees.map((emp) => {
               const statusInfo = getStatusInfo(emp.status);
               return (
-                <div key={emp.employeeId} className={`bg-white rounded-2xl border ${statusInfo.borderColor} p-5 shadow-sm hover:shadow-md transition-all`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                <div key={emp.employeeId} className={`bg-white rounded-xl md:rounded-2xl border ${statusInfo.borderColor} p-3 md:p-5 shadow-sm hover:shadow-md transition-all`}>
+                  <div className="flex items-start justify-between mb-3 md:mb-4">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                       {emp.profileImage ? (
-                        <img src={emp.profileImage} alt={emp.employeeName} className="w-12 h-12 rounded-full object-cover" />
+                        <img src={emp.profileImage} alt={emp.employeeName} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
                           {emp.employeeName?.charAt(0)}
                         </div>
                       )}
-                      <div>
-                        <h3 className="font-semibold text-slate-800">{emp.employeeName}</h3>
-                        <p className="text-xs text-slate-400">{emp.employeeId}</p>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-slate-800 text-sm md:text-base truncate">{emp.employeeName}</h3>
+                        <p className="text-xs text-slate-400 truncate">{emp.employeeId}</p>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
-                      {statusInfo.icon} {statusInfo.label}
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full text-xs font-semibold ${statusInfo.color} flex-shrink-0 ml-2`}>
+                      <span className="hidden sm:inline">{statusInfo.icon}</span>
+                      <span className="sm:hidden">{statusInfo.iconMobile || statusInfo.icon}</span>
+                      <span className="text-[11px] md:text-xs">{statusInfo.label}</span>
                     </span>
                   </div>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
+                  <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-500">Work Duration:</span>
                       <span className="font-semibold text-slate-700">{formatDuration(emp.currentWorkDuration)}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-500">Break Time:</span>
                       <span className="font-semibold text-slate-700">{formatDuration(emp.totalBreakDuration)}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-500">Started At:</span>
-                      <span className="font-semibold text-slate-700">
-                        {emp.startTime ? new Date(emp.startTime).toLocaleTimeString() : "-"}
+                      <span className="font-semibold text-slate-700 text-xs md:text-sm">
+                        {emp.startTime ? new Date(emp.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
                       </span>
                     </div>
                     {emp.breakInfo && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                        <p className="text-xs text-blue-600">
-                          ⏰ {emp.breakInfo.breakType} break - {emp.breakInfo.remainingMinutes} min remaining
+                      <div className="mt-2 p-1.5 md:p-2 bg-blue-50 rounded-lg">
+                        <p className="text-[11px] md:text-xs text-blue-600">
+                          ⏰ {emp.breakInfo.breakType} break - {emp.breakInfo.remainingMinutes} min left
                         </p>
                       </div>
                     )}
                     {emp.isIdle && (
-                      <div className="mt-2 p-2 bg-amber-50 rounded-lg">
-                        <p className="text-xs text-amber-600">
-                          💤 Idle since {emp.lastActiveTime ? new Date(emp.lastActiveTime).toLocaleTimeString() : "unknown"}
+                      <div className="mt-2 p-1.5 md:p-2 bg-amber-50 rounded-lg">
+                        <p className="text-[11px] md:text-xs text-amber-600">
+                          💤 Idle since {emp.lastActiveTime ? new Date(emp.lastActiveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "unknown"}
                         </p>
                       </div>
                     )}

@@ -23,9 +23,9 @@
 // utils/Auth.js
 
 
-export const API_BASE = "https://pmsbackend.pixelmindsolutions.com/api";
+export const API_BASE = "http://localhost:5000/api" ;
 
-export const API_BASE_URL = "https://pmsbackend.pixelmindsolutions.com/api";
+export const API_BASE_URL = "http://localhost:5000/api" ;
 
 
 export const getAuthHeaders = () => {

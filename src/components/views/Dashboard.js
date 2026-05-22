@@ -146,7 +146,7 @@ const Dashboard = () => {
     const fetchDashboard = async () => {
       try {
         setError(null);
-        const res = await axios.get("https://pmsbackend.pixelmindsolutions.com/api/dashboard", {
+        const res = await axios.get("http://localhost:5000/api/dashboard", {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
         if (res.data?.success) setData(res.data.data);
