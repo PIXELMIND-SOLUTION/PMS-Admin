@@ -138,7 +138,7 @@ const Dashboard = () => {
     catch { return {}; }
   })();
 
-  const token     = adminDetails?.token     || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YTk2M2MzOGMxMmM1MDA0MWEwOTkzMiIsImlhdCI6MTc3MzgxMTEzOSwiZXhwIjoxNzc0NDE1OTM5fQ.EeXymlugG6IPfyIssTpur0r5nnMSz1nD0iZHwDzEf3Y";
+  const token     = adminDetails?.token     || "";
   const adminName = adminDetails?.adminName || "Super Admin";
   const adminId   = adminDetails?.adminId   || "69a963c38c12c50041a09932";
 
@@ -146,7 +146,7 @@ const Dashboard = () => {
     const fetchDashboard = async () => {
       try {
         setError(null);
-        const res = await axios.get("http://localhost:5000/api/dashboard", {
+        const res = await axios.get("https://pmsbackend.pixelmindsolutions.com/api/dashboard", {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
         if (res.data?.success) setData(res.data.data);

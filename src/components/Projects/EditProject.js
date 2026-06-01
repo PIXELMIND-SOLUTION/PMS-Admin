@@ -5,8 +5,8 @@
 //   FileText, CheckCircle, AlertCircle, Loader, ChevronDown, Search, User,
 // } from "lucide-react";
 
-// const API_URL   = "http://localhost:5000/api/projects";
-// const STAFF_URL = "http://localhost:5000/api/staff/all";
+// const API_URL   = "https://pmsbackend.pixelmindsolutions.com/api/projects";
+// const STAFF_URL = "https://pmsbackend.pixelmindsolutions.com/api/staff/all";
 // const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 // const AUTH_TOKEN   = adminDetails?.token;
 
@@ -658,8 +658,8 @@ import {
   FileText, CheckCircle, AlertCircle, Loader, ChevronDown, Search, User,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api/projects" || "http://localhost:5000/api/projects";
-const STAFF_URL = "http://localhost:5000/api/staff/all" || "http://localhost:5000/api/staff/all";
+const API_URL = "https://pmsbackend.pixelmindsolutions.com/api/projects" || "https://pmsbackend.pixelmindsolutions.com/api/projects";
+const STAFF_URL = "https://pmsbackend.pixelmindsolutions.com/api/staff/all" || "https://pmsbackend.pixelmindsolutions.com/api/staff/all";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 

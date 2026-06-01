@@ -41,7 +41,7 @@ const Login = ({ onLogin }) => {
     if (!formData.email) return;
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const response = await fetch('https://pmsbackend.pixelmindsolutions.com/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email }),
@@ -64,7 +64,7 @@ const Login = ({ onLogin }) => {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const response = await fetch('https://pmsbackend.pixelmindsolutions.com/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, otp: otpString }),
@@ -90,7 +90,7 @@ const Login = ({ onLogin }) => {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const response = await fetch('https://pmsbackend.pixelmindsolutions.com/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email }),

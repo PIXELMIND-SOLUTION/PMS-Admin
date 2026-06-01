@@ -2,7 +2,7 @@
 // import { useNavigate } from "react-router-dom";
 // import { FolderPlus, Plus, X, CheckCircle, AlertCircle, Loader } from "lucide-react";
 
-// const API_URL = "http://localhost:5000/api/projects";
+// const API_URL = "https://pmsbackend.pixelmindsolutions.com/api/projects";
 // const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 // const AUTH_TOKEN = adminDetails?.token;
 
@@ -365,7 +365,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderPlus, Plus, X, CheckCircle, AlertCircle, Loader } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api/projects" || "http://localhost:5000/api/projects";
+const API_URL = "https://pmsbackend.pixelmindsolutions.com/api/projects" || "https://pmsbackend.pixelmindsolutions.com/api/projects";
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
 const AUTH_TOKEN = adminDetails?.token;
 
