@@ -34,7 +34,7 @@ const AddAttendance = () => {
         }
 
         const res = await axios.get(
-          "https://pmsbackend.pixelmindsolutions.com/api/staff/options",
+          "http://localhost:5000/api/staff",
           {
             headers: {
               Authorization: `Bearer ${AUTH_TOKEN}`,
