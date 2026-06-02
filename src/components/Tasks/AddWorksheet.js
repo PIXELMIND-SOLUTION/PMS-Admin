@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardPlus, Plus, Trash2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { getAuthHeaders, API_BASE_URL } from "../../utils/Auth";
 
-const API = "http://localhost:5000/api/projects" || "http://localhost:5000/api/projects";
+const API = "https://pmsbackend.pixelmindsolutions.com/api" || "https://pmsbackend.pixelmindsolutions.com/api";
 
 const AddWorksheet = () => {
   const navigate = useNavigate();
@@ -26,8 +26,8 @@ const AddWorksheet = () => {
   //   const fetchOptions = async () => {
   //     try {
   //       const [staffRes, projectRes] = await Promise.all([
-  //         fetch(`${API_BASE_URL}/staff/options`, { headers: getAuthHeaders() }),
-  //         fetch(`${API}/options`, { headers: getAuthHeaders() }),
+  //         fetch(`${API}/staff/options`, { headers: getAuthHeaders() }),
+  //         fetch(`${API}/projects/options`, { headers: getAuthHeaders() }),
   //       ]);
 
   //       const staffData = await staffRes.json();
@@ -48,15 +48,15 @@ const AddWorksheet = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        console.log("📡 Fetching staff options from:", `${API_BASE_URL}/staff/options`);
-        console.log("📡 Fetching project options from:", `${API}/options`);
+        console.log("📡 Fetching staff options from:", `${API}/staff/options`);
+        console.log("📡 Fetching project options from:", `${API}/worksheets/project-options`);
         
         const [staffRes, projectRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/staff/options`, { 
+          fetch(`${API}/staff/options`, { 
             method: "GET",
             headers: getAuthHeaders() 
           }),
-          fetch(`${API}/options`, { 
+          fetch(`${API}/worksheets/project-options`, { 
             method: "GET",
             headers: getAuthHeaders() 
           }),
@@ -94,7 +94,6 @@ const AddWorksheet = () => {
     
     fetchOptions();
   }, []);
-
 
 
   /* ---------------- HANDLERS ---------------- */
@@ -179,7 +178,7 @@ const AddWorksheet = () => {
       
       console.log("📤 Sending payload:", payload);
       
-      const response = await fetch(`${API_BASE_URL}/`, {
+      const response = await fetch(`${API}/worksheets/`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
