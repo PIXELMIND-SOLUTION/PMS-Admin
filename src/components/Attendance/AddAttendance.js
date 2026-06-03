@@ -34,7 +34,7 @@ const AddAttendance = () => {
         }
 
         const res = await axios.get(
-          "http://localhost:5000/api/staff",
+          "https://pmsbackend.pixelmindsolutions.com/api/attendance/staff-options",
           {
             headers: {
               Authorization: `Bearer ${AUTH_TOKEN}`,
@@ -73,7 +73,7 @@ const AddAttendance = () => {
     }
 
     const selectedStaff = staffList.find(
-      (staff) => staff._id === attendance.staffId
+      (staff) => staff.employeeId === attendance.staffId
     );
 
     if (!selectedStaff) {
@@ -87,7 +87,7 @@ const AddAttendance = () => {
     const AUTH_TOKEN = adminDetails?.token;
 
     const payload = {
-      staffId: selectedStaff._id,
+      staffId: selectedStaff.employeeId,
       name: selectedStaff.employeeName,
       date: attendance.date,
       status: attendance.status,
@@ -107,7 +107,7 @@ const AddAttendance = () => {
       setSubmitting(true);
 
       const res = await axios.post(
-        "https://pmsbackend.pixelmindsolutions.com/api/attendance",
+        "https://pmsbackend.pixelmindsolutions.com/api/attendance/",
         payload,
         {
           headers: {
@@ -185,7 +185,7 @@ animate-pulse"></div>
                   <option value="">Select Staff</option>
 
                   {staffList.map((staff) => (
-                    <option key={staff._id} value={staff._id}>
+                    <option key={staff.employeeId} value={staff.employeeId}>
                       {staff.employeeName} — {staff.role}
                     </option>
                   ))}

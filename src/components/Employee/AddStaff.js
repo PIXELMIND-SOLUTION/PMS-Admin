@@ -79,45 +79,69 @@ const AddStaff = () => {
   const [apiError, setApiError] = useState(false);
 
   // Fetch roles and blood groups from backend
-  useEffect(() => {
-    const fetchDropdownData = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/metadata`, {
-          headers: {
-            Authorization: `Bearer ${AUTH_TOKEN}`,
-          },
-        });
+  // useEffect(() => {
+  //   const fetchDropdownData = async () => {
+  //     try {
+  //       const response = await fetch(`${API_BASE_URL}/metadata`);
+  //       if (!response.ok) {
+  //         throw new Error(`API returned ${response.status}`);
+  //       }
         
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`);
-        }
+  //       const data = await response.json();
         
-        const data = await response.json();
-        
-        if (data.success && data.roles && data.bloodGroups) {
-          setRoles(data.roles);
-          setBloodGroups(data.bloodGroups);
-          setApiError(false);
-        } else {
-          throw new Error("Invalid data format");
-        }
-      } catch (error) {
-        console.error('Error fetching dropdown data:', error);
-        setApiError(true);
-        showToast("error", "Failed to load roles and blood groups. Please refresh the page.");
-      } finally {
-        setLoadingData(false);
-      }
-    };
+  //       if (data.success && data.roles && data.bloodGroups) {
+  //         setRoles(data.roles);
+  //         setBloodGroups(data.bloodGroups);
+  //         setApiError(false);
+  //       } else {
+  //         throw new Error("Invalid data format");
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching dropdown data:', error);
+  //       setApiError(true);
+  //       showToast("error", "Failed to load roles and blood groups. Please refresh the page.");
+  //     } finally {
+  //       setLoadingData(false);
+  //     }
+  //   };
     
-    if (AUTH_TOKEN) {
-      fetchDropdownData();
-    } else {
-      setLoadingData(false);
+  //   // if (AUTH_TOKEN) {
+  //   //   fetchDropdownData();
+  //   // } else {
+  //   //   setLoadingData(false);
+  //   //   setApiError(true);
+  //   //   showToast("error", "Authentication token not found. Please login again.");
+  //   // }
+  // }, []);
+
+  useEffect(() => {
+  const fetchDropdownData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/metadata`);
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.roles && data.bloodGroups) {
+        setRoles(data.roles);
+        setBloodGroups(data.bloodGroups);
+        setApiError(false);
+      } else {
+        throw new Error("Invalid data format");
+      }
+    } catch (error) {
+      console.error('Error fetching dropdown data:', error);
       setApiError(true);
-      showToast("error", "Authentication token not found. Please login again.");
+      showToast("error", "Failed to load roles and blood groups. Please refresh the page.");
+    } finally {
+      setLoadingData(false);
     }
-  }, []);
+  };
+  
+  fetchDropdownData();
+}, []);
 
   const showToast = (type, message) => {
     setToast({ type, message });
