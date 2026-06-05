@@ -172,8 +172,7 @@ const Projects = () => {
   const [itemsPerPage,   setItemsPerPage]   = useState(12);
 
   /* ── FETCH ── */
-  // Projects.jsx - Handle pagination properly
-  const fetchProjects = async () => {
+   const fetchProjects = async () => {
     setLoading(true); 
     setError(null);
     try {
@@ -183,11 +182,6 @@ const Projects = () => {
       
       if (data.success) {
         setProjects(Array.isArray(data.data) ? data.data : []);
-        
-        // Store pagination info if needed
-        console.log('Total projects:', data.pagination?.total);
-        console.log('Current page:', data.pagination?.page);
-        console.log('Total pages:', data.pagination?.pages);
         
         // If there are more pages, fetch them all (optional)
         if (data.pagination && data.pagination.pages > 1) {
