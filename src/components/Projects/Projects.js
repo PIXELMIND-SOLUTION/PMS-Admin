@@ -172,15 +172,43 @@ const Projects = () => {
   const [itemsPerPage,   setItemsPerPage]   = useState(12);
 
   /* ── FETCH ── */
+  // Projects.jsx - Handle pagination properly
   const fetchProjects = async () => {
-    setLoading(true); setError(null);
+    setLoading(true); 
+    setError(null);
     try {
-      const res  = await fetch(API_URL, { headers: headers() });
+      // Request more items per page
+      const res = await fetch(`${API_URL}?limit=100&page=1`, { headers: headers() });
       const data = await res.json();
-      if (data.success) setProjects(Array.isArray(data.data) ? data.data : []);
-      else throw new Error(data.message || 'Failed to load projects');
-    } catch (err) { setError(err.message); }
-    finally { setLoading(false); }
+      
+      if (data.success) {
+        setProjects(Array.isArray(data.data) ? data.data : []);
+        
+        // Store pagination info if needed
+        console.log('Total projects:', data.pagination?.total);
+        console.log('Current page:', data.pagination?.page);
+        console.log('Total pages:', data.pagination?.pages);
+        
+        // If there are more pages, fetch them all (optional)
+        if (data.pagination && data.pagination.pages > 1) {
+          const allProjects = [...data.data];
+          for (let page = 2; page <= data.pagination.pages; page++) {
+            const nextRes = await fetch(`${API_URL}?limit=100&page=${page}`, { headers: headers() });
+            const nextData = await nextRes.json();
+            if (nextData.success) {
+              allProjects.push(...nextData.data);
+            }
+          }
+          setProjects(allProjects);
+        }
+      } else {
+        throw new Error(data.message || 'Failed to load projects');
+      }
+    } catch (err) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
   useEffect(() => { fetchProjects(); }, []);
 
