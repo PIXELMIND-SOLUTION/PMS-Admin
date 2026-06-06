@@ -4,7 +4,7 @@ import { MdEdit, MdDelete, MdVisibility, MdDownload, MdRefresh, MdAdd, MdGridVie
 import { FaMobileAlt, FaEnvelope, FaSearch, FaFilter, FaFolderOpen, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL      = 'https://pmsbackend.pixelmindsolutions.com/api/projects' || 'https://pmsbackend.pixelmindsolutions.com/api/projects';
+const API_URL      = 'http://localhost:5000/api/projects' || 'http://localhost:5000/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
 const AUTH_TOKEN   = adminDetails?.token;
 
@@ -155,6 +155,62 @@ const ActionBtn = ({ color, icon, title, onClick }) => {
 /* ════════════════════════════════════════════════
    MAIN COMPONENT
 ════════════════════════════════════════════════ */
+// const Projects = () => {
+//   const navigate = useNavigate();
+
+//   const [projects,    setProjects]    = useState([]);
+//   const [loading,     setLoading]     = useState(true);
+//   const [error,       setError]       = useState(null);
+//   const [deleteId,    setDeleteId]    = useState(null);
+//   const [toastMsg,    setToastMsg]    = useState(null);
+//   const [viewMode,    setViewMode]    = useState('card'); // 'card' | 'table'
+
+//   const [search,         setSearch]         = useState('');
+//   const [categoryFilter, setCategoryFilter] = useState('');
+//   const [statusFilter,   setStatusFilter]   = useState('');
+//   const [currentPage,    setCurrentPage]    = useState(1);
+//   const [itemsPerPage,   setItemsPerPage]   = useState(12);
+
+//   /* ── FETCH ── */
+//    const fetchProjects = async () => {
+//   setLoading(true); 
+//   setError(null);
+//   try {
+//     const url = `${API_URL}`;
+//     console.log('Frontend fetching URL:', url);
+//     console.log('Full URL being called:', url);
+    
+//     const res = await fetch(url, { headers: headers() });
+//     const data = await res.json();
+//     console.log('Response pagination:', data.pagination);
+//       if (data.success) {
+//         setProjects(Array.isArray(data.data) ? data.data : []);
+        
+//         // If there are more pages, fetch them all (optional)
+//         if (data.pagination && data.pagination.pages > 1) {
+//           const allProjects = [...data.data];
+//           for (let page = 2; page <= data.pagination.pages; page++) {
+//             const nextRes = await fetch(`${API_URL}?limit=100&page=${page}`, { headers: headers() });
+//             const nextData = await nextRes.json();
+//             if (nextData.success) {
+//               allProjects.push(...nextData.data);
+//             }
+//           }
+//           setProjects(allProjects);
+//         }
+//       } else {
+//         throw new Error(data.message || 'Failed to load projects');
+//       }
+//     } catch (err) { 
+//       setError(err.message); 
+//     } finally {
+//       setLoading(false); 
+//     }
+//   };
+//   useEffect(() => { fetchProjects(); }, []);
+
+
+
 const Projects = () => {
   const navigate = useNavigate();
 
@@ -163,8 +219,7 @@ const Projects = () => {
   const [error,       setError]       = useState(null);
   const [deleteId,    setDeleteId]    = useState(null);
   const [toastMsg,    setToastMsg]    = useState(null);
-  const [viewMode,    setViewMode]    = useState('card'); // 'card' | 'table'
-
+  const [viewMode,    setViewMode]    = useState('card');
   const [search,         setSearch]         = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter,   setStatusFilter]   = useState('');
@@ -172,40 +227,37 @@ const Projects = () => {
   const [itemsPerPage,   setItemsPerPage]   = useState(12);
 
   /* ── FETCH ── */
-   const fetchProjects = async () => {
+  const fetchProjects = async () => {
     setLoading(true); 
     setError(null);
     try {
-      // Request more items per page
-      const res = await fetch(`${API_URL}?limit=100&page=1`, { headers: headers() });
+      const url = `${API_URL}`;
+      console.log('📡 Fetching projects from:', url);
+      
+      const res = await fetch(url, { headers: headers() });
       const data = await res.json();
+      console.log('📦 API Response:', data);
       
       if (data.success) {
-        setProjects(Array.isArray(data.data) ? data.data : []);
-        
-        // If there are more pages, fetch them all (optional)
-        if (data.pagination && data.pagination.pages > 1) {
-          const allProjects = [...data.data];
-          for (let page = 2; page <= data.pagination.pages; page++) {
-            const nextRes = await fetch(`${API_URL}?limit=100&page=${page}`, { headers: headers() });
-            const nextData = await nextRes.json();
-            if (nextData.success) {
-              allProjects.push(...nextData.data);
-            }
-          }
-          setProjects(allProjects);
-        }
+        // Backend now returns ALL projects directly
+        const allProjects = Array.isArray(data.data) ? data.data : [];
+        setProjects(allProjects);
+        console.log(`✅ Successfully loaded ${allProjects.length} projects`);
       } else {
         throw new Error(data.message || 'Failed to load projects');
       }
     } catch (err) { 
+      console.error('❌ Fetch error:', err);
       setError(err.message); 
-    } finally { 
+    } finally {
       setLoading(false); 
     }
   };
-  useEffect(() => { fetchProjects(); }, []);
 
+  useEffect(() => { 
+    fetchProjects(); 
+  }, []);
+  
   /* ── TOAST ── */
   const showToast = (type, message) => {
     setToastMsg({ type, message });
