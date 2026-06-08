@@ -869,7 +869,7 @@ import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Download, Search, Loader2
 import * as XLSX from "xlsx";
 import { getAuthHeaders } from "../../utils/Auth";
 
-const API_BASE = "http://localhost:5000/api"; 
+const API_BASE = "https://pmsbackend.pixelmindsolutions.com/api"; 
 
 const AssignedWorks = () => {
   const [assignments, setAssignments] = useState([]);

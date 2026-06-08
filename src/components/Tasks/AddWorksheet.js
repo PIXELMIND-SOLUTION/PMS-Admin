@@ -487,7 +487,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardPlus, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, User, Briefcase } from "lucide-react";
 import { getAuthHeaders } from "../../utils/Auth";
 
-const API = "http://pmsbackend.pixelmindsolutions.com/api";
+const API = "https://pmsbackend.pixelmindsolutions.com/api";
 
 const AddWorksheet = () => {
   const navigate = useNavigate();
