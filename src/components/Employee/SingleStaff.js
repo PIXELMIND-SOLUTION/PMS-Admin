@@ -260,15 +260,15 @@ const StaffDetails = () => {
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
                   {staff.email && (
                     <a href={`mailto:${staff.email}`}
-                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20
-                        px-3 py-1.5 rounded-full text-xs font-medium transition-colors truncate max-w-[220px]">
+                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 no-underline
+                        px-3 py-1.5 rounded-full text-white text-xs font-medium transition-colors truncate max-w-[220px]">
                       <MdEmail className="shrink-0" /> {staff.email}
                     </a>
                   )}
                   {staff.mobile && (
                     <a href={`tel:${staff.mobile}`}
-                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20
-                        px-3 py-1.5 rounded-full text-xs font-medium transition-colors">
+                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 no-underline
+                        px-3 py-1.5 rounded-full text-white text-xs font-medium transition-colors">
                       <MdPhone className="shrink-0" /> {staff.mobile}
                     </a>
                   )}

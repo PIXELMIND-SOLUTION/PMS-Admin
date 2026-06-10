@@ -691,7 +691,7 @@ const EditWorksheet = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 py-6 md:py-10 px-4 md:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="max-w-5xl mx-auto">
         
         {/* HEADER */}
@@ -708,7 +708,7 @@ const EditWorksheet = () => {
         </div>
 
         {/* FORM CARD */}
-        <form onSubmit={handleSubmit} className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-3xl shadow-xl shadow-slate-200/50 p-5 md:p-8 space-y-8">
+        <form onSubmit={handleSubmit} className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-3xl shadow-xl shadow-slate-200/50 p-3 md:p-3 space-y-8">
           
           {/* ALERTS */}
           {error && (

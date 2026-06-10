@@ -22,13 +22,13 @@ ChartJS.register(
 /* ──────────────────────────────────────────── */
 /*  CONFIG                                      */
 /* ──────────────────────────────────────────── */
-const STATS_API      = "https://pmsbackend.pixelmindsolutions.com/api/attendance/stats";
+const STATS_API = "https://pmsbackend.pixelmindsolutions.com/api/attendance/stats";
 const ATTENDANCE_API = "https://pmsbackend.pixelmindsolutions.com/api/attendance";
-const STAFF_API      = "https://pmsbackend.pixelmindsolutions.com/api/attendance/staff";
+const STAFF_API = "https://pmsbackend.pixelmindsolutions.com/api/attendance/staff";
 
 const adminDetails = JSON.parse(sessionStorage.getItem("adminDetails"));
-const AUTH_TOKEN   = adminDetails?.token;
-const authHeaders  = () => ({ Authorization: `Bearer ${AUTH_TOKEN}` });
+const AUTH_TOKEN = adminDetails?.token;
+const authHeaders = () => ({ Authorization: `Bearer ${AUTH_TOKEN}` });
 
 /* ──────────────────────────────────────────── */
 /*  HELPERS                                     */
@@ -41,8 +41,8 @@ const getCurrentMonth = () => {
 const fmtDate = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-IN", {
-        day: "2-digit", month: "short", year: "numeric",
-      })
+      day: "2-digit", month: "short", year: "numeric",
+    })
     : "—";
 
 const DAYTYPE_LABEL = {
@@ -74,45 +74,86 @@ const getStatus = (s) =>
 
 const C = {
   present: "#10b981",
-  absent:  "#ef4444",
-  leave:   "#f59e0b",
+  absent: "#ef4444",
+  leave: "#f59e0b",
 };
 
 /* ──────────────────────────────────────────── */
 /*  SHARED SUB-COMPONENTS                       */
 /* ──────────────────────────────────────────── */
 
-/* stat card */
 const StatCard = ({ icon, label, value, scheme }) => {
   const S = {
-    teal:    "bg-teal-50    border-teal-100   ring-teal-100    text-teal-600    val-teal-700",
-    emerald: "bg-emerald-50 border-emerald-100 ring-emerald-100 text-emerald-600 val-emerald-700",
-    red:     "bg-red-50     border-red-100    ring-red-100     text-red-600     val-red-700",
-    amber:   "bg-amber-50   border-amber-100  ring-amber-100   text-amber-600   val-amber-700",
-  }[scheme] || "";
-
-  /* extract individual classes */
-  const parts = S.split(" ");
-  const bgCls   = parts[0];
-  const brdCls  = parts[1];
-  const ringCls = parts[2];
-  const icoCls  = parts[3];
-
-  const valColor = {
-    teal:    "text-teal-700",
-    emerald: "text-emerald-700",
-    red:     "text-red-700",
-    amber:   "text-amber-700",
-  }[scheme] || "text-gray-800";
+    teal: {
+      bg: "bg-teal-50",
+      border: "border-teal-100",
+      iconBg: "bg-teal-100",
+      icon: "text-teal-600",
+      value: "text-teal-700",
+    },
+    emerald: {
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+      iconBg: "bg-emerald-100",
+      icon: "text-emerald-600",
+      value: "text-emerald-700",
+    },
+    red: {
+      bg: "bg-red-50",
+      border: "border-red-100",
+      iconBg: "bg-red-100",
+      icon: "text-red-600",
+      value: "text-red-700",
+    },
+    amber: {
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+      iconBg: "bg-amber-100",
+      icon: "text-amber-600",
+      value: "text-amber-700",
+    },
+  }[scheme];
 
   return (
-    <div className={`rounded-2xl border ${bgCls} ${brdCls} p-4 sm:p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow`}>
-      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${ringCls} flex items-center justify-center shrink-0 text-lg sm:text-xl ${icoCls}`}>
+    <div
+      className={`
+        ${S.bg} ${S.border}
+        border rounded-2xl
+        p-4 sm:p-5
+        flex items-center gap-3 sm:gap-4
+        min-h-[92px]
+        shadow-sm hover:shadow-lg
+        transition-all duration-300
+        hover:-translate-y-0.5
+      `}
+    >
+      <div
+        className={`
+          ${S.iconBg} ${S.icon}
+          w-12 h-12 sm:w-14 sm:h-14
+          rounded-xl
+          flex items-center justify-center
+          shrink-0
+          text-xl sm:text-2xl
+        `}
+      >
         {icon}
       </div>
-      <div>
-        <p className={`text-2xl sm:text-3xl font-bold ${valColor}`}>{value ?? 0}</p>
-        <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
+
+      <div className="min-w-0 flex-1">
+        <h3
+          className={`
+            text-2xl sm:text-3xl
+            font-bold leading-none
+            ${S.value}
+          `}
+        >
+          {value ?? 0}
+        </h3>
+
+        <p className="mt-1 text-xs sm:text-sm text-gray-500 font-medium truncate">
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -123,16 +164,15 @@ const ViewToggle = ({ viewMode, setViewMode }) => (
   <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
     {[
       ["table", <MdTableRows size={15} />, "Table"],
-      ["card",  <MdGridView  size={15} />, "Cards"],
+      ["card", <MdGridView size={15} />, "Cards"],
     ].map(([mode, icon, lbl]) => (
       <button
         key={mode}
         onClick={() => setViewMode(mode)}
-        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-          viewMode === mode
+        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === mode
             ? "bg-white text-teal-700 shadow-sm"
             : "text-gray-500 hover:text-teal-600"
-        }`}
+          }`}
       >
         {icon}
         <span className="hidden xs:inline">{lbl}</span>
@@ -198,11 +238,10 @@ const AttTable = ({ records, showName, onRowClick }) => (
             <tr
               key={rec._id || i}
               onClick={() => onRowClick?.(rec)}
-              className={`border-b border-gray-50 transition-colors ${
-                onRowClick
+              className={`border-b border-gray-50 transition-colors ${onRowClick
                   ? "cursor-pointer hover:bg-teal-50/60"
                   : "hover:bg-gray-50/50"
-              }`}
+                }`}
             >
               <td className="py-3 px-3 sm:px-4 text-xs text-gray-400">{i + 1}</td>
               {showName && (
@@ -282,17 +321,17 @@ const AttCard = ({ rec }) => {
 /* ──────────────────────────────────────────── */
 const ShowAttendance = () => {
   /* ── state ── */
-  const [stats,       setStats]       = useState(null);   // from /stats
-  const [records,     setRecords]     = useState([]);     // from /attendance
+  const [stats, setStats] = useState(null);   // from /stats
+  const [records, setRecords] = useState([]);     // from /attendance
   const [statsLoading, setStatsLoading] = useState(true);
-  const [recLoading,  setRecLoading]  = useState(true);
+  const [recLoading, setRecLoading] = useState(true);
 
   const [filterMonth, setFilterMonth] = useState(getCurrentMonth());
-  const [viewMode,    setViewMode]    = useState("table");
+  const [viewMode, setViewMode] = useState("table");
 
   /* employee detail */
-  const [selEmp,     setSelEmp]     = useState(null); // { _id, name }
-  const [empRecs,    setEmpRecs]    = useState([]);
+  const [selEmp, setSelEmp] = useState(null); // { _id, name }
+  const [empRecs, setEmpRecs] = useState([]);
   const [empLoading, setEmpLoading] = useState(false);
   const [empViewMode, setEmpViewMode] = useState("table");
 
@@ -346,14 +385,14 @@ const ShowAttendance = () => {
   /* ── derived stats for employee detail ── */
   const empSummary = useMemo(() => ({
     present: filteredEmpRecs.filter((r) => r.status?.toLowerCase() === "present").length,
-    absent:  filteredEmpRecs.filter((r) => r.status?.toLowerCase() === "absent").length,
-    leave:   filteredEmpRecs.filter((r) => r.status?.toLowerCase() === "leave").length,
-    hours:   filteredEmpRecs.reduce((s, r) => s + (r.hoursWorked || 0), 0),
+    absent: filteredEmpRecs.filter((r) => r.status?.toLowerCase() === "absent").length,
+    leave: filteredEmpRecs.filter((r) => r.status?.toLowerCase() === "leave").length,
+    hours: filteredEmpRecs.reduce((s, r) => s + (r.hoursWorked || 0), 0),
   }), [filteredEmpRecs]);
 
   /* ── chart data ── */
-  const overall  = stats?.overall  || {};
-  const byStaff  = stats?.byStaff  || [];
+  const overall = stats?.overall || {};
+  const byStaff = stats?.byStaff || [];
 
   const staffBarData = {
     labels: byStaff.map((s) => s.name.trim()),
@@ -484,10 +523,10 @@ const ShowAttendance = () => {
 
           {/* stat cards — derived from filtered emp records */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up">
-            <StatCard icon={<FaUsers />}         label="Total Records" value={filteredEmpRecs.length} scheme="teal"    />
-            <StatCard icon={<FaUserCheck />}     label="Present"       value={empSummary.present}     scheme="emerald" />
-            <StatCard icon={<FaUserTimes />}     label="Absent"        value={empSummary.absent}      scheme="red"     />
-            <StatCard icon={<FaUmbrellaBeach />} label="Leave"         value={empSummary.leave}       scheme="amber"   />
+            <StatCard icon={<FaUsers />} label="Total Records" value={filteredEmpRecs.length} scheme="teal" />
+            <StatCard icon={<FaUserCheck />} label="Present" value={empSummary.present} scheme="emerald" />
+            <StatCard icon={<FaUserTimes />} label="Absent" value={empSummary.absent} scheme="red" />
+            <StatCard icon={<FaUmbrellaBeach />} label="Leave" value={empSummary.leave} scheme="amber" />
           </div>
 
           {/* charts */}
@@ -569,10 +608,10 @@ const ShowAttendance = () => {
         {/* ── Overall Stat Cards ── */}
         {!statsLoading && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up">
-            <StatCard icon={<FaUsers />}         label="Total Records" value={overall.total}   scheme="teal"    />
-            <StatCard icon={<FaUserCheck />}     label="Present"       value={overall.present} scheme="emerald" />
-            <StatCard icon={<FaUserTimes />}     label="Absent"        value={overall.absent}  scheme="red"     />
-            <StatCard icon={<FaUmbrellaBeach />} label="Leave"         value={overall.leave}   scheme="amber"   />
+            <StatCard icon={<FaUsers />} label="Total Records" value={overall.total} scheme="teal" />
+            <StatCard icon={<FaUserCheck />} label="Present" value={overall.present} scheme="emerald" />
+            <StatCard icon={<FaUserTimes />} label="Absent" value={overall.absent} scheme="red" />
+            <StatCard icon={<FaUmbrellaBeach />} label="Leave" value={overall.leave} scheme="amber" />
           </div>
         )}
 
@@ -632,8 +671,8 @@ const ShowAttendance = () => {
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { v: s.present, l: "Present", c: "bg-emerald-50 text-emerald-700" },
-                      { v: s.absent,  l: "Absent",  c: "bg-red-50    text-red-700"     },
-                      { v: s.leave,   l: "Leave",   c: "bg-amber-50  text-amber-700"   },
+                      { v: s.absent, l: "Absent", c: "bg-red-50    text-red-700" },
+                      { v: s.leave, l: "Leave", c: "bg-amber-50  text-amber-700" },
                     ].map(({ v, l, c }) => (
                       <div key={l} className={`rounded-xl px-2 py-2 text-center ${c}`}>
                         <p className="text-base font-bold leading-tight">{v}</p>

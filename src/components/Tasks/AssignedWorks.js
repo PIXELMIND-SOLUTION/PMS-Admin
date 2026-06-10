@@ -12,7 +12,7 @@
 //   const [searchTerm, setSearchTerm] = useState("");
 //   const [sheetFilter, setSheetFilter] = useState("");
 //   const [projectFilter, setProjectFilter] = useState("");
-  
+
 //   // Server-side pagination
 //   const [currentPage, setCurrentPage] = useState(1);
 //   const [totalPages, setTotalPages] = useState(1);
@@ -41,7 +41,7 @@
 
 //       const res = await fetch(`${API_BASE}/worksheets?${params}`, { headers: getAuthHeaders() });
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setAssignments(data.data);
 //         setTotalPages(data.pagination.pages);
@@ -64,7 +64,7 @@
 //         headers: getAuthHeaders(),
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setAssignments((prev) => prev.filter((a) => a._id !== id));
 //         setTotalRecords((prev) => Math.max(0, prev - 1));
@@ -87,7 +87,7 @@
 
 //   /* ---------------- CLIENT-SIDE FILTER ---------------- */
 //   const allProjects = [...new Set(assignments.flatMap((a) => a.projects?.map((p) => p.projectName) || []))];
-  
+
 //   const filteredAssignments = assignments.filter((a) => {
 //     const matchesSearch = (a.empId?.toString() || "").toLowerCase().includes(searchTerm.toLowerCase()) || a.employName?.toLowerCase().includes(searchTerm.toLowerCase());
 //     const matchesSheet = sheetFilter ? a.sheet === sheetFilter : true;
@@ -153,7 +153,7 @@
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 py-6 md:py-10 px-4 md:px-6">
 //       <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
-        
+
 //         {/* HEADER */}
 //         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 //           <div>
@@ -338,7 +338,7 @@
 //                       {a.sheet}
 //                     </span>
 //                   </div>
-                  
+
 //                   <button onClick={() => toggleExpand(a._id)} className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors">
 //                     <span className="text-sm font-medium text-slate-700">{a.projects?.length || 0} Project{(a.projects?.length || 0) !== 1 ? "s" : ""}</span>
 //                     {expandedRows.has(a._id) ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
@@ -404,7 +404,7 @@
 //               <h2 className="text-xl font-bold text-slate-800">Export Data</h2>
 //             </div>
 //             <p className="text-sm text-slate-500">Select a date range to export worksheet assignments.</p>
-            
+
 //             <div className="space-y-4">
 //               <div>
 //                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Start Date</label>
@@ -415,7 +415,7 @@
 //                 <input type="date" className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all" value={exportDates.endDate} onChange={(e) => setExportDates({ ...exportDates, endDate: e.target.value })} />
 //               </div>
 //             </div>
-            
+
 //             <div className="flex justify-end gap-3 pt-4">
 //               <button onClick={() => setShowExportModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all">Cancel</button>
 //               <button onClick={handleExport} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-teal-500/25 transition-all">Download</button>
@@ -444,7 +444,7 @@
 //   const [searchTerm, setSearchTerm] = useState("");
 //   const [sheetFilter, setSheetFilter] = useState("");
 //   const [projectFilter, setProjectFilter] = useState("");
-  
+
 //   // Server-side pagination
 //   const [currentPage, setCurrentPage] = useState(1);
 //   const [totalPages, setTotalPages] = useState(1);
@@ -475,7 +475,7 @@
 //         headers: getAuthHeaders() 
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setAssignments(data.data);
 //         setTotalPages(data.pagination.pages);
@@ -498,7 +498,7 @@
 //         headers: getAuthHeaders(),
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         // Refetch to update pagination
 //         fetchAssignments(currentPage);
@@ -525,7 +525,7 @@
 //       alert("Select both start and end dates");
 //       return;
 //     }
-    
+
 //     try {
 //       const res = await fetch(`${API_BASE}/worksheets/export`, {
 //         method: "POST",
@@ -535,7 +535,7 @@
 //           endDate: exportDates.endDate
 //         }),
 //       });
-      
+
 //       const data = await res.json();
 //       if (!data.success) {
 //         alert(data.message || "Failed to fetch data for export");
@@ -576,7 +576,7 @@
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 py-6 md:py-10 px-4 md:px-6">
 //       <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
-        
+
 //         {/* HEADER */}
 //         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 //           <div>
@@ -761,7 +761,7 @@
 //                       {a.sheet}
 //                     </span>
 //                   </div>
-                  
+
 //                   <button onClick={() => toggleExpand(a._id)} className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors">
 //                     <span className="text-sm font-medium text-slate-700">{a.projects?.length || 0} Project{(a.projects?.length || 0) !== 1 ? "s" : ""}</span>
 //                     {expandedRows.has(a._id) ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
@@ -827,7 +827,7 @@
 //               <h2 className="text-xl font-bold text-slate-800">Export Data</h2>
 //             </div>
 //             <p className="text-sm text-slate-500">Select a date range to export worksheet assignments.</p>
-            
+
 //             <div className="space-y-4">
 //               <div>
 //                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Start Date</label>
@@ -848,7 +848,7 @@
 //                 />
 //               </div>
 //             </div>
-            
+
 //             <div className="flex justify-end gap-3 pt-4">
 //               <button onClick={() => setShowExportModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all">Cancel</button>
 //               <button onClick={handleExport} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-teal-500/25 transition-all">Download</button>
@@ -868,8 +868,9 @@ import { Link } from "react-router-dom";
 import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Download, Search, Loader2, AlertCircle, CheckCircle2, Clock, Flag } from "lucide-react";
 import * as XLSX from "xlsx";
 import { getAuthHeaders } from "../../utils/Auth";
+import { FaTasks } from "react-icons/fa";
 
-const API_BASE = "https://pmsbackend.pixelmindsolutions.com/api"; 
+const API_BASE = "https://pmsbackend.pixelmindsolutions.com/api";
 
 const AssignedWorks = () => {
   const [assignments, setAssignments] = useState([]);
@@ -880,7 +881,7 @@ const AssignedWorks = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sheetFilter, setSheetFilter] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
-  
+
   // Server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -934,11 +935,11 @@ const AssignedWorks = () => {
         ...(projectFilter && { project: projectFilter }),
       });
 
-      const res = await fetch(`${API_BASE}/worksheets?${params}`, { 
-        headers: getAuthHeaders() 
+      const res = await fetch(`${API_BASE}/worksheets?${params}`, {
+        headers: getAuthHeaders()
       });
       const data = await res.json();
-      
+
       if (data.success) {
         setAssignments(data.data);
         setTotalPages(data.pagination.pages);
@@ -961,7 +962,7 @@ const AssignedWorks = () => {
         headers: getAuthHeaders(),
       });
       const data = await res.json();
-      
+
       if (data.success) {
         fetchAssignments(currentPage);
       } else {
@@ -993,7 +994,7 @@ const AssignedWorks = () => {
       alert("Select both start and end dates");
       return;
     }
-    
+
     try {
       const res = await fetch(`${API_BASE}/worksheets/export`, {
         method: "POST",
@@ -1003,7 +1004,7 @@ const AssignedWorks = () => {
           endDate: exportDates.endDate
         }),
       });
-      
+
       const data = await res.json();
       if (!data.success) {
         alert(data.message || "Failed to fetch data for export");
@@ -1041,23 +1042,33 @@ const AssignedWorks = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 py-6 md:py-10 px-4 md:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Assigned Works
-            </h1>
-            <p className="text-slate-500 mt-1 text-sm md:text-base">
-              Manage employee project assignments and tasks
-              {totalRecords > 0 && (
-                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700">
-                  {totalRecords} total
-                </span>
-              )}
-            </p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shrink-0">
+                <FaTasks size={20} />
+              </div>
+
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent leading-tight">
+                  Assigned Works
+                </h1>
+
+                <p className="flex flex-wrap items-center gap-2 text-slate-500 mt-1 text-sm md:text-base">
+                  <span>Manage employee project assignments and tasks</span>
+
+                  {totalRecords > 0 && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700">
+                      {totalRecords} total
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <button
@@ -1182,7 +1193,7 @@ const AssignedWorks = () => {
                             </div>
                           </td>
                         </tr>
-                        
+
                         {/* Expanded Projects and Tasks */}
                         {expandedRows.has(a._id) && (
                           <tr className="bg-gradient-to-br from-slate-50/60 to-white/30">
@@ -1192,11 +1203,11 @@ const AssignedWorks = () => {
                                   const projectId = `${a._id}-${idx}`;
                                   const hasProjectTasks = p.tasks && p.tasks.length > 0;
                                   const isProjectExpanded = expandedProjects.has(projectId);
-                                  
+
                                   return (
                                     <div key={p._id || idx} className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                       {/* Project Header */}
-                                      <div 
+                                      <div
                                         className="p-4 cursor-pointer hover:bg-slate-50/60 transition-colors flex justify-between items-center"
                                         onClick={() => toggleProjectExpand(projectId)}
                                       >
@@ -1218,7 +1229,7 @@ const AssignedWorks = () => {
                                           {isProjectExpanded ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
                                         </div>
                                       </div>
-                                      
+
                                       {/* Tasks Section */}
                                       {isProjectExpanded && (
                                         <div className="border-t border-slate-100 p-4 bg-slate-50/30">
@@ -1298,7 +1309,7 @@ const AssignedWorks = () => {
                       {a.sheet}
                     </span>
                   </div>
-                  
+
                   <button onClick={() => toggleExpand(a._id)} className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors">
                     <span className="text-sm font-medium text-slate-700">{a.projects?.length || 0} Project{(a.projects?.length || 0) !== 1 ? "s" : ""}</span>
                     {expandedRows.has(a._id) ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
@@ -1311,7 +1322,7 @@ const AssignedWorks = () => {
                         const hasTasks = p.tasks && p.tasks.length > 0;
                         return (
                           <div key={p._id || idx} className="rounded-xl bg-white border border-slate-200/60 overflow-hidden">
-                            <div 
+                            <div
                               className="p-3 cursor-pointer hover:bg-slate-50 transition-colors flex justify-between items-center"
                               onClick={() => toggleProjectExpand(projectId)}
                             >
@@ -1327,7 +1338,7 @@ const AssignedWorks = () => {
                                 </span>
                               )}
                             </div>
-                            
+
                             {expandedProjects.has(projectId) && (
                               <div className="border-t border-slate-100 p-3 space-y-2">
                                 {!hasTasks ? (
@@ -1400,28 +1411,28 @@ const AssignedWorks = () => {
               <h2 className="text-xl font-bold text-slate-800">Export Data</h2>
             </div>
             <p className="text-sm text-slate-500">Select a date range to export worksheet assignments.</p>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Start Date</label>
-                <input 
-                  type="date" 
-                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all" 
-                  value={exportDates.startDate} 
-                  onChange={(e) => setExportDates({ ...exportDates, startDate: e.target.value })} 
+                <input
+                  type="date"
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all"
+                  value={exportDates.startDate}
+                  onChange={(e) => setExportDates({ ...exportDates, startDate: e.target.value })}
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">End Date</label>
-                <input 
-                  type="date" 
-                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all" 
-                  value={exportDates.endDate} 
-                  onChange={(e) => setExportDates({ ...exportDates, endDate: e.target.value })} 
+                <input
+                  type="date"
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all"
+                  value={exportDates.endDate}
+                  onChange={(e) => setExportDates({ ...exportDates, endDate: e.target.value })}
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-3 pt-4">
               <button onClick={() => setShowExportModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all">Cancel</button>
               <button onClick={handleExport} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-teal-500/25 transition-all">Download</button>

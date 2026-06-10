@@ -66,7 +66,7 @@
 //         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
 //       });
 //       const data = await response.json();
-      
+
 //       if (response.ok && data.success) {
 //         if (data.roles && data.roles.length > 0) setRoles(data.roles);
 //         if (data.bloodGroups && data.bloodGroups.length > 0) setBloodGroups(data.bloodGroups);
@@ -82,12 +82,12 @@
 //         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (!data.success) throw new Error(data.message || "Failed to load staff");
 
 //       const s = data.data;
 //       setCurrentEmployeeId(s.employeeId);
-      
+
 //       setFormData({
 //         employeeId: s.employeeId || "",
 //         employeeName: s.employeeName || "",
@@ -133,10 +133,10 @@
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
 //     setSubmitting(true);
-    
+
 //     try {
 //       const formDataToSend = new FormData();
-      
+
 //       // Add all text fields
 //       formDataToSend.append('employeeId', formData.employeeId.trim());
 //       formDataToSend.append('employeeName', formData.employeeName.trim());
@@ -146,11 +146,11 @@
 //       formDataToSend.append('joiningDate', formData.joiningDate);
 //       formDataToSend.append('bloodGroup', formData.bloodGroup || 'Unknown');
 //       formDataToSend.append('isActive', formData.isActive);
-      
+
 //       if (formData.password && formData.password.trim()) {
 //         formDataToSend.append('password', formData.password);
 //       }
-      
+
 //       // Add images if changed
 //       if (profileImage) {
 //         formDataToSend.append('profileImage', profileImage);
@@ -158,9 +158,9 @@
 //       if (idCardImage) {
 //         formDataToSend.append('idCardImage', idCardImage);
 //       }
-      
+
 //       const updateUrl = `${API_URL}/${currentEmployeeId}`;
-      
+
 //       const response = await fetch(updateUrl, {
 //         method: "PUT",
 //         headers: {
@@ -169,7 +169,7 @@
 //         },
 //         body: formDataToSend,
 //       });
-      
+
 //       const data = await response.json();
 //       console.log("📡 Update response:", data);
 
@@ -547,7 +547,7 @@ const EditStaff = () => {
 
   const [roles, setRoles] = useState(DEFAULT_ROLES);
   const [bloodGroups, setBloodGroups] = useState(DEFAULT_BLOOD_GROUPS);
-  
+
   // Documents state
   const [documents, setDocuments] = useState([]);
   const [newDocuments, setNewDocuments] = useState([]);
@@ -603,7 +603,7 @@ const EditStaff = () => {
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         if (data.roles && data.roles.length > 0) setRoles(data.roles);
         if (data.bloodGroups && data.bloodGroups.length > 0) setBloodGroups(data.bloodGroups);
@@ -619,12 +619,12 @@ const EditStaff = () => {
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
       const data = await res.json();
-      
+
       if (!data.success) throw new Error(data.message || "Failed to load staff");
 
       const s = data.data;
       setCurrentEmployeeId(s.employeeId);
-      
+
       setFormData({
         employeeId: s.employeeId || "",
         employeeName: s.employeeName || "",
@@ -638,13 +638,13 @@ const EditStaff = () => {
         address: s.address || { street: "", city: "", state: "", pincode: "", country: "India" },
         emergencyContact: s.emergencyContact || { name: "", relation: "", mobile: "" }
       });
-      
+
       if (s.profileImage && !s.profileImage.startsWith("/data/user")) setProfilePreview(s.profileImage);
       if (s.idCardImage && !s.idCardImage.startsWith("/data/user")) setIdCardPreview(s.idCardImage);
-      
+
       // Fetch documents for this employee
       await fetchDocuments(s.employeeId);
-      
+
     } catch (err) {
       showToast("error", err.message || "Failed to load staff");
     } finally {
@@ -658,7 +658,7 @@ const EditStaff = () => {
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
       const data = await res.json();
-      
+
       if (data.success) {
         setDocuments(data.data || []);
       }
@@ -676,7 +676,7 @@ const EditStaff = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData((p) => ({
@@ -703,15 +703,15 @@ const EditStaff = () => {
   const handleDocumentUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
+
     setUploadingDocs(true);
-    
+
     try {
       const formDataToSend = new FormData();
       files.forEach(file => {
         formDataToSend.append('documents', file);
       });
-      
+
       const response = await fetch(`${API_URL}/documents/upload/${currentEmployeeId}`, {
         method: "POST",
         headers: {
@@ -719,9 +719,9 @@ const EditStaff = () => {
         },
         body: formDataToSend,
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         showToast("success", `${files.length} document(s) uploaded successfully`);
         await fetchDocuments(currentEmployeeId);
@@ -739,15 +739,15 @@ const EditStaff = () => {
 
   const handleDeleteDocument = async (documentId) => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
-    
+
     try {
       const response = await fetch(`${API_URL}/documents/${documentId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         showToast("success", "Document deleted successfully");
         await fetchDocuments(currentEmployeeId);
@@ -763,10 +763,10 @@ const EditStaff = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
+
     try {
       const formDataToSend = new FormData();
-      
+
       formDataToSend.append('employeeId', formData.employeeId.trim());
       formDataToSend.append('employeeName', formData.employeeName.trim());
       formDataToSend.append('role', formData.role);
@@ -775,35 +775,35 @@ const EditStaff = () => {
       formDataToSend.append('joiningDate', formData.joiningDate);
       formDataToSend.append('bloodGroup', formData.bloodGroup || 'Unknown');
       formDataToSend.append('isActive', formData.isActive);
-      
+
       if (formData.password && formData.password.trim()) {
         formDataToSend.append('password', formData.password);
       }
-      
+
       // Add address as JSON string
-      const hasAddress = formData.address.street || formData.address.city || 
-                        formData.address.state || formData.address.pincode;
+      const hasAddress = formData.address.street || formData.address.city ||
+        formData.address.state || formData.address.pincode;
       if (hasAddress) {
         formDataToSend.append('address', JSON.stringify(formData.address));
       }
-      
+
       // Add emergency contact as JSON string
-      const hasEmergency = formData.emergencyContact.name || 
-                          formData.emergencyContact.relation || 
-                          formData.emergencyContact.mobile;
+      const hasEmergency = formData.emergencyContact.name ||
+        formData.emergencyContact.relation ||
+        formData.emergencyContact.mobile;
       if (hasEmergency) {
         formDataToSend.append('emergencyContact', JSON.stringify(formData.emergencyContact));
       }
-      
+
       if (profileImage) {
         formDataToSend.append('profileImage', profileImage);
       }
       if (idCardImage) {
         formDataToSend.append('idCardImage', idCardImage);
       }
-      
+
       const updateUrl = `${API_URL}/${currentEmployeeId}`;
-      
+
       const response = await fetch(updateUrl, {
         method: "PUT",
         headers: {
@@ -811,7 +811,7 @@ const EditStaff = () => {
         },
         body: formDataToSend,
       });
-      
+
       const data = await response.json();
       console.log("📡 Update response:", data);
 
@@ -878,9 +878,8 @@ const EditStaff = () => {
       `}</style>
 
       {toast && (
-        <div className={`toast-in fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl font-semibold text-sm max-w-[calc(100vw-2rem)] sm:max-w-sm ${
-          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-        }`}>
+        <div className={`toast-in fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl font-semibold text-sm max-w-[calc(100vw-2rem)] sm:max-w-sm ${toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+          }`}>
           {toast.type === "success" ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
           <span className="flex-1 text-xs sm:text-sm">{toast.message}</span>
           <button onClick={() => setToast(null)} className="opacity-80 hover:opacity-100">
@@ -906,9 +905,8 @@ const EditStaff = () => {
               <p className="text-xs text-gray-400 mt-0.5">Update employee profile, details & documents</p>
             </div>
           </div>
-          <span className={`self-start sm:self-auto px-3 py-1.5 rounded-full text-xs font-bold ${
-            formData.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
-          }`}>
+          <span className={`self-start sm:self-auto px-3 py-1.5 rounded-full text-xs font-bold ${formData.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+            }`}>
             {formData.isActive ? "● Active" : "○ Inactive"}
           </span>
         </div>
@@ -977,16 +975,52 @@ const EditStaff = () => {
               <div className="w-1 h-5 rounded-full bg-gradient-to-b from-teal-500 to-emerald-600" />
               <span className="text-xs font-bold text-teal-600 tracking-widest uppercase">👤 Personal Information</span>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-              <InputField icon={<User size={14}/>} label="Employee ID" name="employeeId" value={formData.employeeId} onChange={handleChange} disabled required />
-              <InputField icon={<User size={14}/>} label="Employee Name" name="employeeName" value={formData.employeeName} onChange={handleChange} required />
-              <InputField icon={<Phone size={14}/>} label="Mobile" name="mobile" value={formData.mobile} onChange={handleChange} maxLength={10} required />
-              <InputField icon={<Mail size={14}/>} label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-              <SelectField icon={<Briefcase size={14}/>} label="Role" name="role" value={formData.role} onChange={handleChange} options={roles} required />
-              <InputField icon={<Calendar size={14}/>} label="Joining Date" name="joiningDate" type="date" value={formData.joiningDate} onChange={handleChange} />
-              <SelectField icon={<Droplet size={14}/>} label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={bloodGroups} />
-              <InputField icon={<Lock size={14}/>} label="New Password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Leave blank to keep current" />
+              <InputField icon={<User size={14} />} label="Employee ID" name="employeeId" value={formData.employeeId} onChange={handleChange} disabled required />
+              <InputField icon={<User size={14} />} label="Employee Name" name="employeeName" value={formData.employeeName} onChange={handleChange} required />
+              <InputField
+                icon={<Phone size={14} />}
+                label="Mobile"
+                name="mobile"
+                value={formData.mobile}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  handleChange({
+                    target: {
+                      name: "mobile",
+                      value,
+                    },
+                  });
+                }}
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                placeholder="Enter 10-digit mobile number"
+                required
+              />
+
+              <InputField
+                icon={<Mail size={14} />}
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => {
+                  handleChange({
+                    target: {
+                      name: "email",
+                      value: e.target.value.trim(),
+                    },
+                  });
+                }}
+                placeholder="example@gmail.com"
+                required
+              />
+              <SelectField icon={<Briefcase size={14} />} label="Role" name="role" value={formData.role} onChange={handleChange} options={roles} required />
+              <InputField icon={<Calendar size={14} />} label="Joining Date" name="joiningDate" type="date" value={formData.joiningDate} onChange={handleChange} />
+              <SelectField icon={<Droplet size={14} />} label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={bloodGroups} />
+              <InputField icon={<Lock size={14} />} label="New Password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Leave blank to keep current" />
             </div>
           </div>
 
@@ -1000,7 +1034,7 @@ const EditStaff = () => {
               <ChevronDown className={`transform transition-transform ${showAddress ? 'rotate-180' : ''}`} size={16} />
               {showAddress ? 'Hide' : 'Show'} Address Details
             </button>
-            
+
             {showAddress && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-2">
                 <InputField label="Street" name="address.street" value={formData.address.street} onChange={handleChange} placeholder="Street address" />
@@ -1022,12 +1056,29 @@ const EditStaff = () => {
               <ChevronDown className={`transform transition-transform ${showEmergency ? 'rotate-180' : ''}`} size={16} />
               {showEmergency ? 'Hide' : 'Show'} Emergency Contact
             </button>
-            
+
             {showEmergency && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-2">
                 <InputField label="Contact Name" name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} placeholder="Emergency contact name" />
                 <InputField label="Relation" name="emergencyContact.relation" value={formData.emergencyContact.relation} onChange={handleChange} placeholder="Relation" />
-                <InputField label="Mobile" name="emergencyContact.mobile" value={formData.emergencyContact.mobile} onChange={handleChange} placeholder="Emergency mobile number" />
+                <InputField
+                  label="Mobile"
+                  name="emergencyContact.mobile"
+                  value={formData.emergencyContact.mobile}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+
+                    setFormData((prev) => ({
+                      ...prev,
+                      emergencyContact: {
+                        ...prev.emergencyContact,
+                        mobile: value,
+                      },
+                    }));
+                  }}
+                  placeholder="Emergency mobile number"
+                  maxLength={10}
+                />
               </div>
             )}
           </div>
