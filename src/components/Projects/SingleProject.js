@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MdEdit, MdArrowBack, MdDownload, MdCalendarToday,
-  MdAttachMoney, MdPayment,
+  MdAttachMoney, MdPayment, MdPerson, MdPhone, MdEmail, MdLocationOn
 } from 'react-icons/md';
 import {
   FaRupeeSign, FaMobileAlt, FaEnvelope, FaFileAlt,
@@ -10,24 +10,24 @@ import {
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL = 'https://pmsbackend.pixelmindsolutions.com/api/projects' || 'https://pmsbackend.pixelmindsolutions.com/api/projects';
+const API_URL = 'https://pmsbackend.pixelmindsolutions.com/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
 const AUTH_TOKEN = adminDetails?.token;
 
 const ProjectDetails = () => {
-  const { id }     = useParams();
-  const navigate   = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => { fetchProject(); }, [id]);
 
   const fetchProject = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`${API_URL}/${id}`, {
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
       const data = await res.json();
@@ -61,42 +61,26 @@ const ProjectDetails = () => {
     software:         'text-blue-700 bg-blue-50 border-blue-200',
   }[c?.toLowerCase()] || 'text-gray-600 bg-gray-50 border-gray-200');
 
-  const payModeColor = (m) => ({
-    cash:            'bg-emerald-100 text-emerald-800',
-    'bank transfer': 'bg-blue-100 text-blue-800',
-    upi:             'bg-teal-100 text-teal-800',
-    cheque:          'bg-amber-100 text-amber-800',
-  }[m?.toLowerCase()] || 'bg-gray-100 text-gray-700');
-
-  const totalPaid = () =>
-    project?.milestonePayments?.filter(p => p.paid).reduce((s, p) => s + (p.amount || 0), 0) || 0;
-
-  const progress = () => {
-    if (!project?.milestonePayments?.length) return 0;
-    return Math.round((project.milestonePayments.filter(p => p.paid).length / project.milestonePayments.length) * 100);
-  };
-
   const exportExcel = () => {
     if (!project) return;
     const ws = XLSX.utils.json_to_sheet([{
-      'Project ID':   project.projectId,
+      'Project ID': project.projectId,
       'Project Name': project.projectName,
-      'Client Name':  project.clientName,
-      'Mobile':       project.clientMobile,
-      'Email':        project.clientEmail,
-      'Category':     project.category,
-      'Status':       project.status,
-      'Start Date':   fmt(project.startDate),
-      'Deadline':     fmt(project.deadlineDate),
+      'Client Name': project.client?.name || 'N/A',
+      'Mobile': project.client?.mobile || 'N/A',
+      'Email': project.client?.email || 'N/A',
+      'Category': project.category,
+      'Status': project.status,
+      'Start Date': fmt(project.projectStartDate),
+      'Deadline': fmt(project.deadline),
       'Project Cost': project.projectCost,
-      'Milestones':   project.milestone || 0,
+      'Payment Milestones': project.paymentMilestone || 0,
     }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Project');
     XLSX.writeFile(wb, `project_${project.projectId}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  /* ── LOADING ── */
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
@@ -107,7 +91,6 @@ const ProjectDetails = () => {
     </div>
   );
 
-  /* ── ERROR ── */
   if (error || !project) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="text-center max-w-sm">
@@ -122,7 +105,6 @@ const ProjectDetails = () => {
     </div>
   );
 
-  /* ─────────────────────── RENDER ─────────────────────── */
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
       <style>{`
@@ -136,10 +118,10 @@ const ProjectDetails = () => {
         }
       `}</style>
 
-      <div className="w-full max-w-screen-xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 
-        {/* ── TOP NAV ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6 no-print">
+        {/* Top Nav */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 no-print">
           <button onClick={() => navigate('/projects')}
             className="flex items-center gap-2 text-gray-600 hover:text-teal-700 font-medium text-sm transition-colors self-start">
             <MdArrowBack size={18} /> Back to Projects
@@ -160,7 +142,7 @@ const ProjectDetails = () => {
           </div>
         </div>
 
-        {/* ── HERO BANNER ── */}
+        {/* Hero Banner */}
         <div className="bg-gradient-to-r from-teal-700 to-teal-600 rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden mb-6 sm:mb-8">
           <div className="p-4 sm:p-6 md:p-8 text-white">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -177,10 +159,10 @@ const ProjectDetails = () => {
 
                 <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-3">
                   {[
-                    { icon: <FaUserTie size={12} />,    label: 'Client',     val: project.clientName },
-                    { icon: <MdAttachMoney size={14} />, label: 'Budget',    val: `₹${project.projectCost?.toLocaleString() || 0}` },
-                    { icon: <MdCalendarToday size={13} />, label: 'Start',   val: fmt(project.startDate) },
-                    { icon: <FaChartLine size={12} />,  label: 'Milestones', val: project.milestone || 0 },
+                    { icon: <MdPerson size={14} />, label: 'Client', val: project.client?.name || 'N/A' },
+                    { icon: <MdAttachMoney size={16} />, label: 'Budget', val: `₹${project.projectCost?.toLocaleString() || 0}` },
+                    { icon: <MdCalendarToday size={14} />, label: 'Start', val: fmt(project.projectStartDate) },
+                    { icon: <MdPayment size={14} />, label: 'Milestones', val: project.paymentMilestone || 0 },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-white/90 text-xs sm:text-sm">
                       <span className="opacity-70 shrink-0">{item.icon}</span>
@@ -199,136 +181,71 @@ const ProjectDetails = () => {
           </div>
         </div>
 
-        {/* ── MAIN GRID ── */}
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-5 sm:gap-6 lg:gap-8">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* LEFT: 2/3 */}
-          <div className="lg:col-span-6 space-y-5 sm:space-y-6">
+          {/* Left Column (2/3) */}
+          <div className="lg:col-span-2 space-y-6">
 
-            {/* Basic Info */}
-            <SCard title="Basic Information">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <InfoCell label="Project ID"    value={project.projectId}    icon="🔑" />
-                <InfoCell label="Category"      value={project.category}     icon="📁" badgeCls={catColor(project.category)} />
-                <InfoCell label="Status"        value={project.status}       icon="📊" badgeCls={statusColor(project.status)} />
-                <InfoCell label="Project Cost"  value={`₹${project.projectCost?.toLocaleString() || 0}`} icon="💰" valueCls="text-emerald-700 font-bold" />
-                <InfoCell label="Milestones"    value={project.milestone || 0} icon="🏁" />
-                <InfoCell label="Duration"      value={project.duration || 'Not specified'} icon="⏱️" />
+            {/* Basic Information */}
+            <SectionCard title="Basic Information">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <InfoCell label="Project ID" value={project.projectId} icon="🔑" />
+                <InfoCell label="Category" value={project.category} icon="📁" badgeCls={catColor(project.category)} />
+                <InfoCell label="Status" value={project.status} icon="📊" badgeCls={statusColor(project.status)} />
+                <InfoCell label="Project Cost" value={`₹${project.projectCost?.toLocaleString() || 0}`} icon="💰" valueCls="text-emerald-700 font-bold" />
+                <InfoCell label="Payment Milestones" value={project.paymentMilestone || 0} icon="🏁" />
               </div>
-            </SCard>
+            </SectionCard>
 
             {/* Timeline */}
-            <SCard title="Project Timeline">
+            <SectionCard title="Project Timeline">
               <div className="space-y-3">
-                <TLine icon={<MdCalendarToday className="text-teal-600" size={16} />}  label="Start Date"      date={project.startDate} />
-                <TLine icon={<MdCalendarToday className="text-blue-600" size={16} />}  label="Handover Date"   date={project.projectHandoverDate} />
-                <TLine icon={<MdCalendarToday className="text-red-500" size={16} />}   label="Deadline"        date={project.deadlineDate} isDeadline />
+                <TimelineItem icon={<MdCalendarToday className="text-teal-600" size={16} />} label="Start Date" date={project.projectStartDate} />
+                <TimelineItem icon={<MdCalendarToday className="text-blue-600" size={16} />} label="End Date" date={project.projectEndDate} />
+                <TimelineItem icon={<MdCalendarToday className="text-red-500" size={16} />} label="Deadline" date={project.deadline} isDeadline />
               </div>
-            </SCard>
+            </SectionCard>
 
-            {/* Client Info */}
-            <SCard title="Client Information">
+            {/* Client Information */}
+            <SectionCard title="Client Information">
               <div className="space-y-3">
-                <CInfo icon={<FaUserTie className="text-teal-600" size={14} />}  label="Client Name"    value={project.clientName} />
-                <CInfo icon={<FaMobileAlt className="text-blue-600" size={14} />} label="Mobile"        value={project.clientMobile} type="phone" />
-                <CInfo icon={<FaEnvelope className="text-purple-600" size={14} />} label="Email"        value={project.clientEmail} type="email" />
-                {project.clientAddress && (
-                  <CInfo icon={<span className="text-gray-500 text-sm">📍</span>} label="Address" value={project.clientAddress} />
+                <ContactInfo icon={<MdPerson className="text-teal-600" size={16} />} label="Client Name" value={project.client?.name} />
+                <ContactInfo icon={<MdPhone className="text-blue-600" size={16} />} label="Mobile" value={project.client?.mobile} type="phone" />
+                <ContactInfo icon={<MdEmail className="text-purple-600" size={16} />} label="Email" value={project.client?.email} type="email" />
+                {project.client?.address && (
+                  <ContactInfo icon={<MdLocationOn className="text-gray-600" size={16} />} label="Address" value={project.client?.address} />
                 )}
               </div>
-            </SCard>
+            </SectionCard>
 
-            {/* App/Website Timeline */}
-            {project.appDetails?.timeline && (
-              <SCard title="Development Timeline">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {Object.entries(project.appDetails.timeline).map(([key, val]) => (
-                    val && (
-                      <div key={key} className="bg-teal-50 rounded-xl p-3 text-center">
-                        <p className="text-xs text-gray-500 capitalize mb-1">{key}</p>
-                        <p className="text-sm font-bold text-teal-700">{val}</p>
-                      </div>
-                    )
-                  ))}
-                </div>
-              </SCard>
-            )}
-
-            {/* Budget Installments */}
-            {project.budgetInstallments?.length > 0 && (
-              <SCard title="Budget Installments">
-                <div className="space-y-2.5">
-                  {project.budgetInstallments.map((b, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">{b.title}</p>
-                        {b.deadline && <p className="text-xs text-gray-400 mt-0.5">Due: {fmt(b.deadline)}</p>}
-                      </div>
-                      <span className="font-bold text-emerald-700 text-sm">₹{b.amount?.toLocaleString()}</span>
+            {/* Work Division */}
+            {project.workDivision && Object.keys(project.workDivision).length > 0 && (
+              <SectionCard title="Work Division">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {Object.entries(project.workDivision).map(([key, value]) => (
+                    <div key={key} className="bg-teal-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-500 capitalize mb-1">{key}</p>
+                      <p className="text-lg font-bold text-teal-700">{value}%</p>
                     </div>
                   ))}
                 </div>
-              </SCard>
+                <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-teal-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                </div>
+              </SectionCard>
             )}
           </div>
 
-          {/* RIGHT: 1/3 */}
-          <div className="space-y-5 sm:space-y-6">
+          {/* Right Column (1/3) */}
+          <div className="space-y-6">
 
-            {/* Milestone Payments */}
-            {project.milestonePayments?.length > 0 && (
-              <SCard title="Milestone Payments">
-                {/* Progress */}
-                <div className="mb-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-600">Payment Progress</span>
-                    <span className="text-sm font-bold text-teal-600">{progress()}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${progress()}%` }} />
-                  </div>
-                  <div className="flex justify-between mt-2 text-xs text-gray-500">
-                    <span>₹{totalPaid().toLocaleString()} paid</span>
-                    <span>₹{((project.projectCost || 0) - totalPaid()).toLocaleString()} left</span>
-                  </div>
-                </div>
-                {/* List */}
+            {/* Team Assignment */}
+            {project.teamAssignment && Object.keys(project.teamAssignment).some(k => project.teamAssignment[k]?.length > 0) && (
+              <SectionCard title="Team Members">
                 <div className="space-y-3">
-                  {project.milestonePayments.map((pay, i) => (
-                    <div key={pay._id || i} className="p-3 border border-gray-200 rounded-xl hover:border-teal-200 transition-colors">
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 ${pay.paid ? 'bg-emerald-500' : 'bg-amber-500'}`}>
-                            {i + 1}
-                          </div>
-                          <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate">
-                            {pay.description || `Milestone ${i + 1}`}
-                          </p>
-                        </div>
-                        <span className="font-bold text-emerald-700 text-sm shrink-0">₹{pay.amount?.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {pay.paymentMode && (
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${payModeColor(pay.paymentMode)}`}>
-                            {pay.paymentMode}
-                          </span>
-                        )}
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${pay.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                          {pay.paid ? 'Paid' : 'Pending'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SCard>
-            )}
-
-            {/* Team Members */}
-            {project.teamMembers && Object.values(project.teamMembers).some(v => Array.isArray(v) && v.length > 0) && (
-              <SCard title="Team Members">
-                <div className="space-y-3">
-                  {Object.entries(project.teamMembers).map(([role, members]) => (
-                    Array.isArray(members) && members.length > 0 && (
+                  {Object.entries(project.teamAssignment).map(([role, members]) => (
+                    members && members.length > 0 && (
                       <div key={role} className="p-3 bg-gray-50 rounded-xl">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-gray-800 text-xs capitalize">{role}</span>
@@ -337,7 +254,7 @@ const ProjectDetails = () => {
                         <div className="flex flex-wrap gap-1.5">
                           {members.map((m, i) => (
                             <span key={i} className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700">
-                              {m}
+                              {m.name}
                             </span>
                           ))}
                         </div>
@@ -345,61 +262,34 @@ const ProjectDetails = () => {
                     )
                   ))}
                 </div>
-              </SCard>
+              </SectionCard>
             )}
 
-            {/* Files */}
-            {(project.uploadfile || project.quotationfile) && (
-              <SCard title="Attached Files">
-                <div className="space-y-2.5">
-                  {[
-                    { file: project.quotationfile, label: 'Quotation File',  color: 'blue' },
-                    { file: project.uploadfile,    label: 'Project File',    color: 'teal' },
-                  ].filter(f => f.file).map((f, i) => (
-                    <a key={i} href={f.file} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-2 rounded-lg ${f.color === 'teal' ? 'bg-teal-50' : 'bg-blue-50'}`}>
-                          <FaFileAlt className={f.color === 'teal' ? 'text-teal-600' : 'text-blue-600'} size={14} />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800 text-xs">{f.label}</p>
-                          <p className="text-xs text-gray-400">Click to view</p>
-                        </div>
-                      </div>
-                      <MdDownload className="text-gray-400 group-hover:text-teal-600 transition-colors" size={16} />
-                    </a>
-                  ))}
+            {/* Project Stats */}
+            <SectionCard title="Project Stats">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                  <span className="text-sm text-gray-600">Total Cost</span>
+                  <span className="text-lg font-bold text-teal-700">₹{project.projectCost?.toLocaleString() || 0}</span>
                 </div>
-              </SCard>
-            )}
-
-            {/* Digital Marketing */}
-            {project.marketing && (
-              <SCard title="Marketing Services">
-                <div className="space-y-2.5">
-                  {Object.entries(project.marketing).map(([key, val]) => {
-                    if (typeof val === 'boolean') {
-                      return val ? (
-                        <div key={key} className="flex items-center gap-2 p-2.5 bg-teal-50 rounded-lg">
-                          <span className="text-teal-500">✓</span>
-                          <span className="text-sm font-semibold text-teal-800 capitalize">{key}</span>
-                        </div>
-                      ) : null;
-                    }
-                    if (val?.enabled) {
-                      return (
-                        <div key={key} className="p-2.5 bg-teal-50 rounded-lg">
-                          <p className="text-sm font-bold text-teal-800 capitalize mb-1">{key}</p>
-                          <p className="text-xs text-teal-600">{val.quantity} / {val.duration} · Starts {fmt(val.startDate)}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                  <span className="text-sm text-gray-600">Payment Milestones</span>
+                  <span className="text-lg font-bold text-teal-700">{project.paymentMilestone || 0}</span>
                 </div>
-              </SCard>
-            )}
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                  <span className="text-sm text-gray-600">Category</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${catColor(project.category)}`}>
+                    {project.category}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                  <span className="text-sm text-gray-600">Status</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColor(project.status)}`}>
+                    {project.status}
+                  </span>
+                </div>
+              </div>
+            </SectionCard>
           </div>
         </div>
       </div>
@@ -407,15 +297,13 @@ const ProjectDetails = () => {
   );
 };
 
-/* ── SECTION CARD ── */
-const SCard = ({ title, children }) => (
+const SectionCard = ({ title, children }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 print:shadow-none">
     <h2 className="text-sm sm:text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100">{title}</h2>
     {children}
   </div>
 );
 
-/* ── INFO CELL ── */
 const InfoCell = ({ label, value, icon, badgeCls, valueCls }) => (
   <div className="info-card p-3 rounded-xl bg-gray-50">
     <p className="text-xs text-gray-500 font-medium mb-1.5">{icon} {label}</p>
@@ -427,8 +315,7 @@ const InfoCell = ({ label, value, icon, badgeCls, valueCls }) => (
   </div>
 );
 
-/* ── TIMELINE ITEM ── */
-const TLine = ({ icon, label, date, isDeadline }) => {
+const TimelineItem = ({ icon, label, date, isDeadline }) => {
   const overdue = isDeadline && date && new Date(date) < new Date();
   const formatted = date
     ? new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -447,8 +334,7 @@ const TLine = ({ icon, label, date, isDeadline }) => {
   );
 };
 
-/* ── CONTACT INFO ── */
-const CInfo = ({ icon, label, value, type }) => (
+const ContactInfo = ({ icon, label, value, type }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
     <div className="shrink-0">{icon}</div>
     <div className="flex-1 min-w-0">

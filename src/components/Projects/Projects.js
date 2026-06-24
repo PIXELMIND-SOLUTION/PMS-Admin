@@ -4,9 +4,9 @@ import { MdEdit, MdDelete, MdVisibility, MdDownload, MdRefresh, MdAdd, MdGridVie
 import { FaMobileAlt, FaEnvelope, FaSearch, FaFilter, FaFolderOpen, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 
-const API_URL      = 'https://pmsbackend.pixelmindsolutions.com/api/projects' || 'https://pmsbackend.pixelmindsolutions.com/api/projects';
+const API_URL = 'https://pmsbackend.pixelmindsolutions.com/api/projects';
 const adminDetails = JSON.parse(sessionStorage.getItem('adminDetails'));
-const AUTH_TOKEN   = adminDetails?.token;
+const AUTH_TOKEN = adminDetails?.token;
 
 const headers = () => ({
   Authorization: `Bearer ${AUTH_TOKEN}`,
@@ -52,36 +52,25 @@ const categoryIcon = (c) => ({
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const fmtCost = (n) => n != null && n !== '' ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
 
-/* ════════════════════════════════════════════════
-   PROJECT CARD
-════════════════════════════════════════════════ */
+/* ── PROJECT CARD ── */
 const ProjectCard = ({ p, idx, onView, onEdit, onDelete, onStatusChange }) => (
-  <div className="proj-card bg-white rounded-2xl border border-gray-100 overflow-hidden
-    shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
-
-    {/* color band */}
+  <div className="proj-card bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
     <div className={`h-1.5 w-full bg-gradient-to-r ${categoryGradient(p.category)}`} />
-
-    {/* card header */}
     <div className="p-4 pb-3 flex items-start justify-between gap-2">
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${categoryGradient(p.category)}
-          flex items-center justify-center text-xl shrink-0 shadow-sm`}>
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${categoryGradient(p.category)} flex items-center justify-center text-xl shrink-0 shadow-sm`}>
           {categoryIcon(p.category)}
         </div>
         <div className="min-w-0">
           <p className="font-bold text-gray-800 text-sm leading-tight truncate">{p.projectName}</p>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">{p.clientName}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">{p.client?.name || 'No Client'}</p>
         </div>
       </div>
-
-      {/* status selector */}
       <select
         value={p.status}
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onStatusChange(p._id, e.target.value)}
-        className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border cursor-pointer
-          appearance-none text-center capitalize ${statusColor(p.status)}`}
+        className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border cursor-pointer appearance-none text-center capitalize ${statusColor(p.status)}`}
         style={{ minWidth: 72 }}
       >
         <option value="active">Active</option>
@@ -90,42 +79,32 @@ const ProjectCard = ({ p, idx, onView, onEdit, onDelete, onStatusChange }) => (
         <option value="cancelled">Cancelled</option>
       </select>
     </div>
-
-    {/* divider */}
     <div className="mx-4 h-px bg-gray-50" />
-
-    {/* info grid */}
     <div className="p-4 grid grid-cols-2 gap-y-2.5 gap-x-3 flex-1">
       <InfoPill icon="🪪" label="ID" value={p.projectId || '—'} mono />
       <InfoPill icon={categoryIcon(p.category)} label="Category" value={p.category || '—'} />
-      <InfoPill icon="📅" label="Start" value={fmtDate(p.startDate)} />
-      <InfoPill icon="🏁" label="Deadline" value={fmtDate(p.deadlineDate)} />
+      <InfoPill icon="📅" label="Start" value={fmtDate(p.projectStartDate)} />
+      <InfoPill icon="🏁" label="Deadline" value={fmtDate(p.deadline)} />
       <InfoPill icon="💰" label="Cost" value={fmtCost(p.projectCost)} />
-      <InfoPill icon="📞" label="Mobile" value={p.clientMobile || '—'} />
+      <InfoPill icon="📞" label="Mobile" value={p.client?.mobile || '—'} />
     </div>
-
-    {/* email */}
-    {p.clientEmail && (
+    {p.client?.email && (
       <div className="px-4 pb-2">
-        <a href={`mailto:${p.clientEmail}`}
-          className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 truncate">
-          <FaEnvelope size={10} className="shrink-0" /> {p.clientEmail}
+        <a href={`mailto:${p.client.email}`} className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 truncate">
+          <FaEnvelope size={10} className="shrink-0" /> {p.client.email}
         </a>
       </div>
     )}
-
     <div className="mx-4 h-px bg-gray-50" />
-
-    {/* actions */}
     <div className="p-3 flex items-center justify-between gap-2">
       <span className="flex items-center gap-1.5 text-xs text-gray-400">
         <span className={`w-1.5 h-1.5 rounded-full ${statusDot(p.status)}`} />
         {p.status}
       </span>
       <div className="flex items-center gap-1">
-        <ActionBtn color="teal"  icon={<MdVisibility size={14} />} title="View"   onClick={() => onView(p._id)} />
-        <ActionBtn color="blue"  icon={<MdEdit size={14} />}       title="Edit"   onClick={() => onEdit(p._id)} />
-        <ActionBtn color="red"   icon={<MdDelete size={14} />}     title="Delete" onClick={() => onDelete(p._id)} />
+        <ActionBtn color="teal" icon={<MdVisibility size={14} />} title="View" onClick={() => onView(p._id)} />
+        <ActionBtn color="blue" icon={<MdEdit size={14} />} title="Edit" onClick={() => onEdit(p._id)} />
+        <ActionBtn color="red" icon={<MdDelete size={14} />} title="Delete" onClick={() => onDelete(p._id)} />
       </div>
     </div>
   </div>
@@ -152,177 +131,171 @@ const ActionBtn = ({ color, icon, title, onClick }) => {
   );
 };
 
-/* ════════════════════════════════════════════════
-   MAIN COMPONENT
-════════════════════════════════════════════════ */
-// const Projects = () => {
-//   const navigate = useNavigate();
-
-//   const [projects,    setProjects]    = useState([]);
-//   const [loading,     setLoading]     = useState(true);
-//   const [error,       setError]       = useState(null);
-//   const [deleteId,    setDeleteId]    = useState(null);
-//   const [toastMsg,    setToastMsg]    = useState(null);
-//   const [viewMode,    setViewMode]    = useState('card'); // 'card' | 'table'
-
-//   const [search,         setSearch]         = useState('');
-//   const [categoryFilter, setCategoryFilter] = useState('');
-//   const [statusFilter,   setStatusFilter]   = useState('');
-//   const [currentPage,    setCurrentPage]    = useState(1);
-//   const [itemsPerPage,   setItemsPerPage]   = useState(12);
-
-//   /* ── FETCH ── */
-//    const fetchProjects = async () => {
-//   setLoading(true); 
-//   setError(null);
-//   try {
-//     const url = `${API_URL}`;
-//     console.log('Frontend fetching URL:', url);
-//     console.log('Full URL being called:', url);
-    
-//     const res = await fetch(url, { headers: headers() });
-//     const data = await res.json();
-//     console.log('Response pagination:', data.pagination);
-//       if (data.success) {
-//         setProjects(Array.isArray(data.data) ? data.data : []);
-        
-//         // If there are more pages, fetch them all (optional)
-//         if (data.pagination && data.pagination.pages > 1) {
-//           const allProjects = [...data.data];
-//           for (let page = 2; page <= data.pagination.pages; page++) {
-//             const nextRes = await fetch(`${API_URL}?limit=100&page=${page}`, { headers: headers() });
-//             const nextData = await nextRes.json();
-//             if (nextData.success) {
-//               allProjects.push(...nextData.data);
-//             }
-//           }
-//           setProjects(allProjects);
-//         }
-//       } else {
-//         throw new Error(data.message || 'Failed to load projects');
-//       }
-//     } catch (err) { 
-//       setError(err.message); 
-//     } finally {
-//       setLoading(false); 
-//     }
-//   };
-//   useEffect(() => { fetchProjects(); }, []);
-
-
-
+/* ── MAIN COMPONENT ── */
 const Projects = () => {
   const navigate = useNavigate();
 
-  const [projects,    setProjects]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [deleteId,    setDeleteId]    = useState(null);
-  const [toastMsg,    setToastMsg]    = useState(null);
-  const [viewMode,    setViewMode]    = useState('card');
-  const [search,         setSearch]         = useState('');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleteIds, setDeleteIds] = useState([]);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [viewMode, setViewMode] = useState('card');
+  const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter,   setStatusFilter]   = useState('');
-  const [currentPage,    setCurrentPage]    = useState(1);
-  const [itemsPerPage,   setItemsPerPage]   = useState(12);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   /* ── FETCH ── */
   const fetchProjects = async () => {
-    setLoading(true); 
+    setLoading(true);
     setError(null);
     try {
-      const url = `${API_URL}`;
-      console.log('📡 Fetching projects from:', url);
-      
-      const res = await fetch(url, { headers: headers() });
-      const data = await res.json();
-      console.log('📦 API Response:', data);
+      const response = await fetch(`${API_URL}/all`, {
+        headers: headers()
+      });
+      const data = await response.json();
       
       if (data.success) {
-        // Backend now returns ALL projects directly
-        const allProjects = Array.isArray(data.data) ? data.data : [];
-        setProjects(allProjects);
-        console.log(`✅ Successfully loaded ${allProjects.length} projects`);
+        setProjects(Array.isArray(data.data) ? data.data : []);
       } else {
         throw new Error(data.message || 'Failed to load projects');
       }
-    } catch (err) { 
-      console.error('❌ Fetch error:', err);
-      setError(err.message); 
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError(err.message);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
-  useEffect(() => { 
-    fetchProjects(); 
+  useEffect(() => {
+    fetchProjects();
   }, []);
-  
+
   /* ── TOAST ── */
   const showToast = (type, message) => {
     setToastMsg({ type, message });
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  /* ── DELETE ── */
+  /* ── DELETE (Single) ── */
   const handleDelete = async (id) => {
     try {
-      const res  = await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: headers() });
-      const data = await res.json();
-      if (data.success) { setProjects(prev => prev.filter(p => p._id !== id)); showToast('success', 'Project deleted successfully'); }
-      else showToast('error', data.message || 'Delete failed');
-    } catch { showToast('error', 'Network error while deleting'); }
-    finally { setDeleteId(null); }
+      const response = await fetch(`${API_URL}/delete`, {
+        method: 'DELETE',
+        headers: headers(),
+        body: JSON.stringify({ projectIds: [id] }),
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setProjects(prev => prev.filter(p => p._id !== id));
+        showToast('success', 'Project deleted successfully');
+      } else {
+        showToast('error', data.message || 'Delete failed');
+      }
+    } catch {
+      showToast('error', 'Network error while deleting');
+    }
+  };
+
+  /* ── BULK DELETE ── */
+  const handleBulkDelete = async () => {
+    if (deleteIds.length === 0) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/delete`, {
+        method: 'DELETE',
+        headers: headers(),
+        body: JSON.stringify({ projectIds: deleteIds }),
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setProjects(prev => prev.filter(p => !deleteIds.includes(p._id)));
+        setDeleteIds([]);
+        showToast('success', `${data.data.deletedCount} projects deleted successfully`);
+      } else {
+        showToast('error', data.message || 'Bulk delete failed');
+      }
+    } catch {
+      showToast('error', 'Network error while deleting');
+    }
   };
 
   /* ── STATUS CHANGE ── */
   const handleStatusChange = async (id, newStatus) => {
     const prev = projects.find(p => p._id === id);
     setProjects(ps => ps.map(p => p._id === id ? { ...p, status: newStatus } : p));
+    
     try {
-      const res  = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT', headers: headers(),
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: headers(),
         body: JSON.stringify({ ...prev, status: newStatus }),
       });
-      const data = await res.json();
-      if (!data.success) { setProjects(ps => ps.map(p => p._id === id ? prev : p)); showToast('error', 'Status update failed'); }
-    } catch { setProjects(ps => ps.map(p => p._id === id ? prev : p)); showToast('error', 'Network error'); }
+      const data = await response.json();
+      
+      if (!data.success) {
+        setProjects(ps => ps.map(p => p._id === id ? prev : p));
+        showToast('error', 'Status update failed');
+      }
+    } catch {
+      setProjects(ps => ps.map(p => p._id === id ? prev : p));
+      showToast('error', 'Network error');
+    }
   };
 
   /* ── FILTER ── */
   const filtered = useMemo(() => {
     const s = search.toLowerCase();
     return projects.filter(p => {
-      const ms = p.projectName?.toLowerCase().includes(s) || p.clientName?.toLowerCase().includes(s) ||
-                 p.projectId?.toLowerCase().includes(s)   || p.clientEmail?.toLowerCase().includes(s);
-      return ms && (categoryFilter ? p.category === categoryFilter : true) && (statusFilter ? p.status === statusFilter : true);
+      const ms = p.projectName?.toLowerCase().includes(s) || 
+                 p.client?.name?.toLowerCase().includes(s) ||
+                 p.projectId?.toLowerCase().includes(s) ||
+                 p.client?.email?.toLowerCase().includes(s);
+      return ms && (categoryFilter ? p.category === categoryFilter : true) && 
+             (statusFilter ? p.status === statusFilter : true);
     });
   }, [search, categoryFilter, statusFilter, projects]);
 
   /* ── PAGINATION ── */
-  const perPage     = viewMode === 'card' ? itemsPerPage : itemsPerPage;
-  const totalPages  = Math.ceil(filtered.length / perPage);
-  const startIndex  = (currentPage - 1) * perPage;
-  const paginated   = filtered.slice(startIndex, startIndex + perPage);
-  useEffect(() => { setCurrentPage(1); }, [search, categoryFilter, statusFilter, itemsPerPage, viewMode]);
+  const perPage = viewMode === 'card' ? itemsPerPage : itemsPerPage;
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const startIndex = (currentPage - 1) * perPage;
+  const paginated = filtered.slice(startIndex, startIndex + perPage);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter, statusFilter, itemsPerPage, viewMode]);
 
   /* ── STATS ── */
   const stats = useMemo(() => ({
-    total:     projects.length,
-    active:    projects.filter(p => p.status === 'active').length,
+    total: projects.length,
+    active: projects.filter(p => p.status === 'active').length,
     completed: projects.filter(p => p.status === 'completed').length,
-    onHold:    projects.filter(p => p.status === 'on hold').length,
+    onHold: projects.filter(p => p.status === 'on hold').length,
   }), [projects]);
 
   /* ── EXPORT ── */
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filtered.map(p => ({
-      'Project ID': p.projectId, 'Project Name': p.projectName, 'Client': p.clientName,
-      'Category': p.category,   'Mobile': p.clientMobile,       'Email': p.clientEmail, 'Status': p.status,
+      'Project ID': p.projectId,
+      'Project Name': p.projectName,
+      'Client': p.client?.name || 'N/A',
+      'Category': p.category,
+      'Mobile': p.client?.mobile || 'N/A',
+      'Email': p.client?.email || 'N/A',
+      'Status': p.status,
+      'Start Date': fmtDate(p.projectStartDate),
+      'Deadline': fmtDate(p.deadline),
+      'Cost': p.projectCost,
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Projects');
-    XLSX.writeFile(wb, 'Projects.xlsx');
+    XLSX.writeFile(wb, `Projects_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   /* ══════════════════════════════ RENDER ══════════════════════════════ */
@@ -365,29 +338,6 @@ const Projects = () => {
         </div>
       )}
 
-      {/* ── DELETE MODAL ── */}
-      {deleteId && (
-        <div className="modal-back">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
-              <MdDelete className="text-red-500" size={24} />
-            </div>
-            <h3 className="text-base font-bold text-gray-800 text-center mb-1">Delete Project?</h3>
-            <p className="text-xs text-gray-500 text-center mb-5">This action cannot be undone.</p>
-            <div className="flex gap-2.5">
-              <button onClick={() => setDeleteId(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 text-sm">
-                Cancel
-              </button>
-              <button onClick={() => handleDelete(deleteId)}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
 
         {/* ── HEADER ── */}
@@ -407,30 +357,27 @@ const Projects = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+            {/* Bulk Delete */}
+            {deleteIds.length > 0 && (
+              <button onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-md">
+                <MdDelete size={16} /> Delete ({deleteIds.length})
+              </button>
+            )}
 
-            {/* ── VIEW TOGGLE ── */}
+            {/* View Toggle */}
             <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-              <button
-                onClick={() => setViewMode('card')}
-                title="Card View"
+              <button onClick={() => setViewMode('card')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'card'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-teal-600'
-                }`}
-              >
+                  viewMode === 'card' ? 'bg-teal-600 text-white shadow-sm' : 'text-gray-500 hover:text-teal-600'
+                }`}>
                 <MdGridView size={15} />
                 <span className="hidden sm:inline">Cards</span>
               </button>
-              <button
-                onClick={() => setViewMode('table')}
-                title="Table View"
+              <button onClick={() => setViewMode('table')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'table'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-teal-600'
-                }`}
-              >
+                  viewMode === 'table' ? 'bg-teal-600 text-white shadow-sm' : 'text-gray-500 hover:text-teal-600'
+                }`}>
                 <MdTableRows size={15} />
                 <span className="hidden sm:inline">Table</span>
               </button>
@@ -450,18 +397,18 @@ const Projects = () => {
         {/* ── STAT CARDS ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4 mb-5 sm:mb-6">
           {[
-            { label: 'Total',     value: stats.total,     icon: '📁', color: 'teal'    },
-            { label: 'Active',    value: stats.active,    icon: '🟢', color: 'emerald' },
-            { label: 'Completed', value: stats.completed, icon: '✅', color: 'blue'    },
-            { label: 'On Hold',   value: stats.onHold,    icon: '⏸️', color: 'amber'  },
+            { label: 'Total', value: stats.total, icon: '📁', color: 'teal' },
+            { label: 'Active', value: stats.active, icon: '🟢', color: 'emerald' },
+            { label: 'Completed', value: stats.completed, icon: '✅', color: 'blue' },
+            { label: 'On Hold', value: stats.onHold, icon: '⏸️', color: 'amber' },
           ].map((s, i) => (
             <div key={i} className="stat-card rounded-2xl p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xl">{s.icon}</span>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full hidden sm:inline ${
-                  s.color === 'teal'    ? 'bg-teal-100 text-teal-700'     :
+                  s.color === 'teal' ? 'bg-teal-100 text-teal-700' :
                   s.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
-                  s.color === 'blue'    ? 'bg-blue-100 text-blue-700'     :
+                  s.color === 'blue' ? 'bg-blue-100 text-blue-700' :
                   'bg-amber-100 text-amber-700'}`}>{s.label}</span>
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-gray-800">{s.value}</p>
@@ -480,7 +427,7 @@ const Projects = () => {
               <span className="font-bold text-gray-800 text-sm">Filters</span>
               <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-bold">{filtered.length}</span>
             </div>
-            <button onClick={() => { setSearch(''); setCategoryFilter(''); setStatusFilter(''); fetchProjects(); }}
+            <button onClick={fetchProjects}
               className="p-1.5 sm:p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all" title="Refresh">
               <MdRefresh size={17} />
             </button>
@@ -511,7 +458,7 @@ const Projects = () => {
             <select className="s-inp h-10 px-3 rounded-xl text-sm text-gray-700 appearance-none cursor-pointer"
               value={itemsPerPage} onChange={(e) => setItemsPerPage(Number(e.target.value))}>
               {viewMode === 'card'
-                ? [<option key={8}  value={8}>8 / page</option>,
+                ? [<option key={8} value={8}>8 / page</option>,
                    <option key={12} value={12}>12 / page</option>,
                    <option key={24} value={24}>24 / page</option>]
                 : [<option key={10} value={10}>10 / page</option>,
@@ -551,9 +498,11 @@ const Projects = () => {
                         key={p._id}
                         p={p}
                         idx={startIndex + idx}
-                        onView={(id)   => navigate(`/projects/${id}`)}
-                        onEdit={(id)   => navigate(`/edit-project/${id}`)}
-                        onDelete={(id) => setDeleteId(id)}
+                        onView={(id) => navigate(`/projects/${id}`)}
+                        onEdit={(id) => navigate(`/edit-project/${id}`)}
+                        onDelete={(id) => {
+                          if (window.confirm('Delete this project?')) handleDelete(id);
+                        }}
                         onStatusChange={handleStatusChange}
                       />
                     ))}
@@ -575,10 +524,18 @@ const Projects = () => {
             {viewMode === 'table' && (
               <div className="card rounded-2xl overflow-hidden fade-up">
                 <div className="overflow-x-auto scroll-x">
-                  <table className="w-full" style={{ borderCollapse:'separate', borderSpacing:0, minWidth:520 }}>
+                  <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: 520 }}>
                     <thead>
                       <tr className="bg-gradient-to-r from-teal-700 to-teal-600 text-white">
-                        <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold w-8">#</th>
+                        <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold w-8">
+                          <input type="checkbox" onChange={(e) => {
+                            if (e.target.checked) {
+                              setDeleteIds(paginated.map(p => p._id));
+                            } else {
+                              setDeleteIds([]);
+                            }
+                          }} className="w-4 h-4 rounded border-white/30 bg-white/10 checked:bg-white" />
+                        </th>
                         <th className="h-xs py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">ID</th>
                         <th className="py-3 px-3 sm:px-4 text-left text-xs font-semibold">Project</th>
                         <th className="h-sm py-3 px-3 sm:px-4 text-left text-xs font-semibold whitespace-nowrap">Category</th>
@@ -590,22 +547,26 @@ const Projects = () => {
                     <tbody>
                       {paginated.length > 0 ? paginated.map((p, idx) => (
                         <tr key={p._id} className="tbl-row border-b border-gray-50">
-                          <td className="py-3 px-3 sm:px-4 text-xs text-gray-400">{startIndex + idx + 1}</td>
+                          <td className="py-3 px-3 sm:px-4">
+                            <input type="checkbox" checked={deleteIds.includes(p._id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setDeleteIds([...deleteIds, p._id]);
+                                } else {
+                                  setDeleteIds(deleteIds.filter(id => id !== p._id));
+                                }
+                              }} className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                          </td>
                           <td className="h-xs py-3 px-3 sm:px-4">
                             <span className="font-mono font-semibold text-gray-600 text-xs whitespace-nowrap">{p.projectId}</span>
                           </td>
                           <td className="py-3 px-3 sm:px-4">
-                            <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate" style={{ maxWidth:'clamp(90px,22vw,200px)' }}>
+                            <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate" style={{ maxWidth: 'clamp(90px,22vw,200px)' }}>
                               {p.projectName}
                             </p>
-                            <p className="text-xs text-gray-400 truncate" style={{ maxWidth:'clamp(90px,20vw,180px)' }}>
-                              {p.clientName}
+                            <p className="text-xs text-gray-400 truncate" style={{ maxWidth: 'clamp(90px,20vw,180px)' }}>
+                              {p.client?.name || 'No Client'}
                             </p>
-                            <div className="flex items-center gap-1.5 mt-0.5 sm:hidden flex-wrap">
-                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${categoryBadge(p.category)}`}>
-                                {p.category}
-                              </span>
-                            </div>
                           </td>
                           <td className="h-sm py-3 px-3 sm:px-4">
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border whitespace-nowrap ${categoryBadge(p.category)}`}>
@@ -614,8 +575,8 @@ const Projects = () => {
                           </td>
                           <td className="h-sm py-3 px-3 sm:px-4">
                             <div className="flex flex-col gap-0.5 text-xs text-gray-500">
-                              <span className="flex items-center gap-1"><FaMobileAlt size={10} className="text-gray-400" />{p.clientMobile || '—'}</span>
-                              <span className="flex items-center gap-1 truncate max-w-[130px]"><FaEnvelope size={10} className="text-gray-400" />{p.clientEmail || '—'}</span>
+                              <span className="flex items-center gap-1"><FaMobileAlt size={10} className="text-gray-400" />{p.client?.mobile || '—'}</span>
+                              <span className="flex items-center gap-1 truncate max-w-[130px]"><FaEnvelope size={10} className="text-gray-400" />{p.client?.email || '—'}</span>
                             </div>
                           </td>
                           <td className="py-3 px-3 sm:px-4">
@@ -637,8 +598,9 @@ const Projects = () => {
                                 className="btn-act bg-blue-50 hover:bg-blue-100 text-blue-600" title="Edit">
                                 <MdEdit size={15} />
                               </button>
-                              <button onClick={() => setDeleteId(p._id)}
-                                className="btn-act bg-red-50 hover:bg-red-100 text-red-500" title="Delete">
+                              <button onClick={() => {
+                                if (window.confirm('Delete this project?')) handleDelete(p._id);
+                              }} className="btn-act bg-red-50 hover:bg-red-100 text-red-500" title="Delete">
                                 <MdDelete size={15} />
                               </button>
                             </div>

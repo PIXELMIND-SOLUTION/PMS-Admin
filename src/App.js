@@ -27,6 +27,10 @@ import AdvancedInvoice from './components/Invoice/AdvaceInvoiceGenerator';
 import WorkSessionLive from './components/WorkSession/WorkSessionLive';
 import WorkSessionHistory from './components/WorkSession/WorkSessionHistory';
 import WorkSessionReports from './components/WorkSession/WorkSessionReports';
+import AddClient from './components/clients/AddClient';
+import EditClient from './components/clients/EditClient';
+import AllClients from './components/clients/AllClients';
+import SingleClient from './components/clients/SingleClient';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -58,6 +62,10 @@ function App() {
         <Route path="staff/:id" element={<StaffDetails />} />
         <Route path="staff/edit/:id" element={<EditStaff />} />
         <Route path="add-staff" element={<AddStaff />} />
+        <Route path='add-client' element={<AddClient/>}/>
+        <Route path='edit-client' element={<EditClient/>}/>
+        <Route path='allclients' element={<AllClients/>}/>
+        <Route path='client/:id' element={<SingleClient/>}/>
         <Route path="add-project" element={<AddProject />} />
         <Route path="projects/:id" element={<ProjectDetails />} />
         <Route path="edit-project/:id" element={<EditProject />} />

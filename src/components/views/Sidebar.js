@@ -995,6 +995,16 @@ const Sidebar = ({ isOpen, onLogout, isMobile, isTablet, onClose }) => {
       ],
     },
     {
+      id: 'clients',
+      label: 'Clients',
+      icon: <MdFolder />,
+      description: 'Leads',
+      submenu: [
+        { path: '/add-client', label: 'New Lead', icon: <MdAddCircleOutline />, description: 'Create Lead' },
+        { path: '/allclients', label: 'Lead List', icon: <MdListAlt />, description: 'All Leads' },
+      ],
+    },
+    {
       id: 'projects',
       label: 'Projects',
       icon: <MdFolder />,
